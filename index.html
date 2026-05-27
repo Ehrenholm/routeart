@@ -338,6 +338,23 @@ canvas#overlay{position:absolute;top:0;left:0;}
 </div>
 </div>
 
+<div class="modal-bg" id="donateModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal" style="text-align:center;width:260px;padding:24px 20px">
+    <div style="font-size:1.6rem;margin-bottom:10px">☕</div>
+    <div class="modal-title" style="margin-bottom:8px">Enjoy RouteArt?</div>
+    <p style="color:#aaa;font-size:0.58rem;line-height:1.6;margin-bottom:18px">It's free to use. If it saved you time or made something you're proud of, a small donation keeps the project alive.</p>
+    <a href="https://ko-fi.com/ehrenholm" target="_blank"
+       style="display:block;background:#c8b89a;color:#0e0e0e;padding:8px 16px;border-radius:20px;
+              font-family:'DM Mono',monospace;font-size:0.62rem;font-weight:500;
+              text-decoration:none;letter-spacing:0.5px;margin-bottom:10px;transition:background .2s"
+       onmouseover="this.style.background='#ddd0bb'" onmouseout="this.style.background='#c8b89a'"
+       onclick="document.getElementById('donateModal').classList.remove('show')">
+      ☕ Support on Ko-fi
+    </a>
+    <button class="btn sec" style="width:100%;font-size:0.56rem" onclick="document.getElementById('donateModal').classList.remove('show')">No thanks</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="artModal">
   <div class="modal">
     <div class="modal-title">Edit Element</div>
@@ -1909,7 +1926,7 @@ dz.addEventListener('dragleave',function(){dz.classList.remove('drag');});
 dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
 
 // EXPORT
-function exportPNG(){var a=document.createElement('a');a.download='route-art.png';a.href=C.toDataURL('image/png');a.click();}
+function exportPNG(){var a=document.createElement('a');a.download='route-art.png';a.href=C.toDataURL('image/png');a.click();document.getElementById('donateModal').classList.add('show');}
 function exportSVG(){
   if(!finalPts.length)return;
   var p=getP(),t=TH[p.theme],wh=FMTS[p.fmt],W=wh[0],H=wh[1];
@@ -1927,6 +1944,7 @@ function exportSVG(){
   var a=document.createElement('a');a.download='route-art.svg';
   a.href='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'">\n<rect width="'+W+'" height="'+H+'" fill="'+t.bg1+'"/>\n<path d="'+pathD+'" stroke="'+t.route+'" stroke-width="'+(p.wt*4).toFixed(1)+'" fill="none" stroke-linecap="round" stroke-linejoin="round"/>\n'+artSVG+'\n</svg>');
   a.click();
+  document.getElementById('donateModal').classList.add('show');
 }
 </script>
 </body>
