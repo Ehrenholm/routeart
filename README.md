@@ -96,19 +96,6 @@ npx serve .
 
 ---
 
-## Development with Claude Code
-
-This project was built and iterated with [Claude Code](https://claude.ai/code):
-
-```bash
-npm install -g @anthropic-ai/claude-code
-cd routeart
-claude
-```
-
-Claude Code has full file access and can help add features, fix bugs, and refactor directly in your codebase.
-
----
 
 ## Map Tile Attribution
 
