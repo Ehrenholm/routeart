@@ -314,6 +314,9 @@ canvas#overlay{position:absolute;top:0;left:0;}
   <div class="section">
     <button class="btn" id="btnExport" onclick="exportPNG()" disabled>Export PNG</button>
     <button class="btn sec" id="btnSVG" onclick="exportSVG()" disabled>Export SVG</button>
+    <div id="exportCountWrap" style="text-align:center;margin-top:6px;font-size:0.52rem;letter-spacing:1px;color:#555;display:none">
+      <span id="exportCount">—</span> POSTERS EXPORTED
+    </div>
   </div>
 </div>
 
@@ -1925,8 +1928,24 @@ dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('
 dz.addEventListener('dragleave',function(){dz.classList.remove('drag');});
 dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
 
+// POSTER COUNTER
+var COUNTER_URL='https://api.countapi.xyz/hit/routeart.app/exports';
+function updateCountDisplay(val){
+  if(!val)return;
+  var w=document.getElementById('exportCountWrap');
+  document.getElementById('exportCount').textContent=Number(val).toLocaleString();
+  w.style.display='block';
+}
+fetch('https://api.countapi.xyz/get/routeart.app/exports')
+  .then(function(r){return r.json();}).then(function(d){updateCountDisplay(d.value);}).catch(function(){});
+
+function hitCounter(){
+  fetch(COUNTER_URL).then(function(r){return r.json();})
+    .then(function(d){updateCountDisplay(d.value);}).catch(function(){});
+}
+
 // EXPORT
-function exportPNG(){var a=document.createElement('a');a.download='route-art.png';a.href=C.toDataURL('image/png');a.click();document.getElementById('donateModal').classList.add('show');}
+function exportPNG(){var a=document.createElement('a');a.download='route-art.png';a.href=C.toDataURL('image/png');a.click();hitCounter();document.getElementById('donateModal').classList.add('show');}
 function exportSVG(){
   if(!finalPts.length)return;
   var p=getP(),t=TH[p.theme],wh=FMTS[p.fmt],W=wh[0],H=wh[1];
@@ -1944,6 +1963,7 @@ function exportSVG(){
   var a=document.createElement('a');a.download='route-art.svg';
   a.href='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'">\n<rect width="'+W+'" height="'+H+'" fill="'+t.bg1+'"/>\n<path d="'+pathD+'" stroke="'+t.route+'" stroke-width="'+(p.wt*4).toFixed(1)+'" fill="none" stroke-linecap="round" stroke-linejoin="round"/>\n'+artSVG+'\n</svg>');
   a.click();
+  hitCounter();
   document.getElementById('donateModal').classList.add('show');
 }
 </script>
