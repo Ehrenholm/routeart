@@ -112,7 +112,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
   <div style="display:flex;gap:14px;align-items:center">
     <div style="text-align:right;line-height:1.3">
       <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:#c8b89a;letter-spacing:0.5px" id="exportCount">—</div>
-      <div style="font-size:0.46rem;color:#555;letter-spacing:2px;text-transform:uppercase">Posters exported</div>
+      <div style="font-size:0.46rem;color:#888;letter-spacing:2px;text-transform:uppercase">Posters exported</div>
     </div>
     <a href="https://ko-fi.com/ehrenholm" target="_blank" id="kofiBtn"
        style="background:#c8b89a;color:#0e0e0e;padding:5px 12px;border-radius:20px;
@@ -1930,17 +1930,18 @@ dz.addEventListener('dragleave',function(){dz.classList.remove('drag');});
 dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
 
 // POSTER COUNTER
-var COUNTER_URL='https://api.countapi.xyz/hit/routeart.app/exports';
+var COUNTER_NS='routeart-app', COUNTER_KEY='exports';
+var COUNTER_BASE='https://api.counterapi.dev/v1/'+COUNTER_NS+'/'+COUNTER_KEY;
 function updateCountDisplay(val){
-  if(!val)return;
+  if(val==null)return;
   document.getElementById('exportCount').textContent=Number(val).toLocaleString();
 }
-fetch('https://api.countapi.xyz/get/routeart.app/exports')
-  .then(function(r){return r.json();}).then(function(d){updateCountDisplay(d.value);}).catch(function(){});
+fetch(COUNTER_BASE)
+  .then(function(r){return r.json();}).then(function(d){updateCountDisplay(d.count);}).catch(function(){});
 
 function hitCounter(){
-  fetch(COUNTER_URL).then(function(r){return r.json();})
-    .then(function(d){updateCountDisplay(d.value);}).catch(function(){});
+  fetch(COUNTER_BASE+'/up').then(function(r){return r.json();})
+    .then(function(d){updateCountDisplay(d.count);}).catch(function(){});
 }
 
 // EXPORT
