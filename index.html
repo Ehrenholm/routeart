@@ -273,6 +273,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
         <option value="portrait">Portrait A3</option>
         <option value="square">Square</option>
         <option value="landscape">Landscape A3</option>
+        <option value="reel">Reel 9:16 (video)</option>
       </select>
     </div>
   </div>
@@ -313,6 +314,39 @@ canvas#overlay{position:absolute;top:0;left:0;}
     </div>
     <button class="btn sec" style="margin-top:5px" onclick="addArtElement()">+ Add to canvas</button>
     <div class="art-list" id="artList"></div>
+  </div>
+
+  <div class="section" id="animSection" style="display:none">
+    <div class="slabel">&#127916; Animate route</div>
+    <div class="ctrl">
+      <label>Style</label>
+      <select id="animStyle" onchange="if(animPrepared)prepAnim();drawAnimStill();">
+        <option value="draw">Draw / unspool</option>
+        <option value="comet">Comet trail</option>
+        <option value="snake">Snake / segment</option>
+        <option value="camera">Camera follow + zoom</option>
+      </select>
+    </div>
+    <div class="ctrl"><label>Total time <span id="vAnimDur">12</span>s</label><input type="range" id="slAnimDur" min="3" max="60" value="12"></div>
+    <div class="tog-row"><span class="tog-label">Live HUD readout</span><div class="tog on" id="togHud" onclick="this.classList.toggle('on');drawAnimStill();"></div></div>
+    <div class="tog-row"><span class="tog-label">Milestone pins</span><div class="tog on" id="togPins" onclick="this.classList.toggle('on');drawAnimStill();"></div></div>
+    <div class="tog-row"><span class="tog-label">Progress + timer</span><div class="tog on" id="togProg" onclick="this.classList.toggle('on');drawAnimStill();"></div></div>
+    <div class="tog-row"><span class="tog-label">Big animated stat</span><div class="tog" id="togHero" onclick="this.classList.toggle('on');gp('heroStatWrap').style.display=this.classList.contains('on')?'block':'none';drawAnimStill();"></div></div>
+    <div class="ctrl" id="heroStatWrap" style="display:none">
+      <label>Hero stat</label>
+      <select id="heroStat" onchange="drawAnimStill()">
+        <option value="distance">Distance (counts up)</option>
+        <option value="elevation">Elevation (live)</option>
+        <option value="speed">Speed (live)</option>
+      </select>
+    </div>
+    <div class="mode-btns" style="margin-top:8px">
+      <div class="mbtn" id="btnPlay" onclick="toggleAnim()">&#9654; Play</div>
+      <div class="mbtn" onclick="restartAnim()">&#8635; Restart</div>
+      <div class="mbtn" onclick="exitAnim()">&#10005; Exit</div>
+    </div>
+    <button class="btn sec" id="btnRecord" onclick="recordOrSave()">&#9679; Record video</button>
+    <div class="hint" id="animHint" style="display:block">Tip: pick <strong style="color:#c8b89a">Reel 9:16</strong> format for Instagram Reels/Stories. Recording captures the full play-through to a video file.</div>
   </div>
 
   <div class="section">
@@ -477,7 +511,7 @@ var artLayerOrder=['background','route','middle','foreground'];
 
 var C=gp('poster'),ctx=C.getContext('2d');
 var OV=gp('overlay'),octx=OV.getContext('2d');
-var FMTS={portrait:[2480,3508],square:[3000,3000],landscape:[3508,2480]};
+var FMTS={portrait:[2480,3508],square:[3000,3000],landscape:[3508,2480],reel:[1080,1920]};
 var TH={
   dark:    {bg1:'#141414',bg2:'#0a0a0a',route:'#c8b89a',raw:'#252525',txt:'#f0ece4',sub:'#555',acc:'#c8b89a'},
   light:   {bg1:'#faf6ee',bg2:'#ece6d8',route:'#1a1a1a',raw:'#ccc',   txt:'#1a1a1a',sub:'#999',acc:'#8b6f47'},
@@ -1920,6 +1954,7 @@ function loadFile(f){
     gp('fileOk').style.display='block';gp('fileOk').textContent='OK '+f.name+' ('+rawPts.length+' pts)';
     gp('statsSection').style.display='block';gp('emptyState').style.display='none';
     gp('posterWrap').style.display='block';gp('btnExport').disabled=false;gp('btnSVG').disabled=false;
+    gp('animSection').style.display='block';exitAnim(true);
     updateArtList();showTimeline();render();
   };rd.readAsText(f);
 }
@@ -1965,6 +2000,274 @@ function exportSVG(){
   hitCounter();
   document.getElementById('donateModal').classList.add('show');
 }
+
+// ═══════════════════════════════════════════════════
+// ROUTE ANIMATION  —  reveal the route over a set time,
+// follow the head, call out live stats & milestones.
+// Reuses all base poster settings (theme, colour, map…).
+// ═══════════════════════════════════════════════════
+var animD=null, animBgC=null, animPrepared=false, animCam=null;
+var animPlaying=false, animRAF=null, animBase=0, animLast=0, animProg=0, animOnDone=null;
+
+// ---- small helpers ----
+function easeInOut(t){t=Math.max(0,Math.min(1,t));return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;}
+function easeOutBack(t){t=Math.max(0,Math.min(1,t));var c1=1.70158,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2);}
+function ptAt(arr,f){var n=arr.length,i=Math.floor(f),fr=f-i,a=arr[Math.max(0,Math.min(n-1,i))],b=arr[Math.max(0,Math.min(n-1,i+1))];return{x:a.x+(b.x-a.x)*fr,y:a.y+(b.y-a.y)*fr};}
+function aRound(ctx2,x,y,w,h,r){if(ctx2.roundRect){ctx2.beginPath();ctx2.roundRect(x,y,w,h,r);return;}r=Math.min(r,w/2,h/2);ctx2.beginPath();ctx2.moveTo(x+r,y);ctx2.arcTo(x+w,y,x+w,y+h,r);ctx2.arcTo(x+w,y+h,x,y+h,r);ctx2.arcTo(x,y+h,x,y,r);ctx2.arcTo(x,y,x+w,y,r);ctx2.closePath();}
+function fmtDist(m){return m>=1000?(m/1000).toFixed(2)+' km':Math.round(m)+' m';}
+function fmtSpeed(s){return (s||0).toFixed(1)+' km/h';}
+function fmtEle(e){return Math.round(e)+' m';}
+function fmtClock(sec){sec=Math.max(0,sec);var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=Math.floor(sec%60);return (h?h+':'+(m<10?'0':''):'')+m+':'+(s<10?'0':'')+s;}
+
+// ---- build per-frame animation data (downsampled) ----
+function prepAnim(){
+  if(!finalPts.length)return false;
+  var p=getP(),wh=FMTS[p.fmt],W=wh[0],H=wh[1];
+  // Snapshot the static poster WITHOUT the base route → reused every frame.
+  if(!animBgC)animBgC=document.createElement('canvas');
+  animBgC.width=W;animBgC.height=H;
+  var savedBase=layerVis.base;layerVis.base=false;render();
+  animBgC.getContext('2d').drawImage(C,0,0);layerVis.base=savedBase;
+  // Geometry + series, aligned to finalPts, then downsampled for speed.
+  var full=project(finalPts,W,H,p.pad);
+  var fullCols=(p.colorMode&&p.colorMode!=='solid')?buildPointColors(p.colorMode,p.colorRamp):null;
+  var es=buildSeries('elevation'),fullEle=es?es.vals:null;
+  var ss=buildSeries('speed'),fullSpd=ss?ss.vals:null;
+  var fullRC=[0];for(var i=1;i<finalPts.length;i++)fullRC.push(fullRC[i-1]+hav(finalPts[i-1],finalPts[i]));
+  var N=full.length,step=Math.max(1,Math.ceil(N/1400));
+  var pp=[],cols=fullCols?[]:null,ele=fullEle?[]:null,spd=fullSpd?[]:null,realCum=[],lastKept=0;
+  for(i=0;i<N;i+=step){pp.push(full[i]);if(cols)cols.push(fullCols[i]);if(ele)ele.push(fullEle[i]);if(spd)spd.push(fullSpd[i]);realCum.push(fullRC[i]);lastKept=i;}
+  if(lastKept!==N-1){pp.push(full[N-1]);if(cols)cols.push(fullCols[N-1]);if(ele)ele.push(fullEle[N-1]);if(spd)spd.push(fullSpd[N-1]);realCum.push(fullRC[N-1]);}
+  var maxEleIdx=-1,mx=-1e9;if(ele)for(i=0;i<ele.length;i++)if(ele[i]!=null&&ele[i]>mx){mx=ele[i];maxEleIdx=i;}
+  var topSpdIdx=-1,ms=-1;if(spd)for(i=0;i<spd.length;i++)if(spd[i]>ms){ms=spd[i];topSpdIdx=i;}
+  var durReal=0,vt=rawTime.filter(function(x){return x!=null;});if(vt.length>1)durReal=(vt[vt.length-1]-vt[0])/1000;
+  var pins=[{idx:0,icon:'',label:'Start',sub:''}];
+  if(maxEleIdx>0)pins.push({idx:maxEleIdx,label:'▲ Highest',sub:fmtEle(ele[maxEleIdx])});
+  if(topSpdIdx>0)pins.push({idx:topSpdIdx,label:'⚡ Top speed',sub:fmtSpeed(spd[topSpdIdx])});
+  pins.push({idx:pp.length-1,label:'Finish',sub:''});
+  animD={pp:pp,cols:cols,ele:ele,spd:spd,realCum:realCum,total:realCum[realCum.length-1]||1,pins:pins,durReal:durReal};
+  animPrepared=true;return true;
+}
+function distToHeadF(d){
+  var rc=animD.realCum,n=rc.length;
+  if(d<=0)return 0;if(d>=rc[n-1])return n-1;
+  var lo=0,hi=n-1;while(lo+1<hi){var m=(lo+hi)>>1;if(rc[m]<=d)lo=m;else hi=m;}
+  var seg=rc[hi]-rc[lo];return lo+(seg>0?(d-rc[lo])/seg:0);
+}
+function w2s(x,y,W,H){if(!animCam)return{x:x,y:y};return{x:(x-animCam.x)*animCam.z+W/2,y:(y-animCam.y)*animCam.z+H/2};}
+
+// ---- the route, drawn up to the head, per style ----
+function strokeAnim(pp,cols,a,b,wt,glowCol,alpha,withGlow){
+  if(b-a<0.5)return;var ai=Math.ceil(a),bi=Math.floor(b),pa=ptAt(pp,a),pb=ptAt(pp,b),i;
+  if(withGlow){ctx.save();ctx.globalAlpha=alpha*0.2;ctx.strokeStyle=glowCol;ctx.shadowColor=glowCol;ctx.shadowBlur=wt*5;ctx.lineWidth=wt*1.9;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();ctx.moveTo(pa.x,pa.y);for(i=ai;i<=bi;i++)ctx.lineTo(pp[i].x,pp[i].y);ctx.lineTo(pb.x,pb.y);ctx.stroke();ctx.restore();}
+  ctx.save();ctx.globalAlpha=alpha;ctx.lineWidth=wt;ctx.lineJoin='round';ctx.lineCap='round';
+  if(cols){var prev=pa;for(i=ai;i<=bi;i++){ctx.beginPath();ctx.moveTo(prev.x,prev.y);ctx.lineTo(pp[i].x,pp[i].y);ctx.strokeStyle=cols[Math.min(i,cols.length-1)];ctx.stroke();prev=pp[i];}ctx.beginPath();ctx.moveTo(prev.x,prev.y);ctx.lineTo(pb.x,pb.y);ctx.strokeStyle=cols[Math.min(bi,cols.length-1)];ctx.stroke();}
+  else{ctx.strokeStyle=glowCol;ctx.beginPath();ctx.moveTo(pa.x,pa.y);for(i=ai;i<=bi;i++)ctx.lineTo(pp[i].x,pp[i].y);ctx.lineTo(pb.x,pb.y);ctx.stroke();}
+  ctx.restore();
+}
+function drawHead(x,y,wt,col,glow){ctx.save();ctx.shadowColor=glow;ctx.shadowBlur=wt*8;ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,wt*1.9,0,7);ctx.fill();ctx.shadowBlur=0;ctx.globalAlpha=0.92;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,wt*0.75,0,7);ctx.fill();ctx.restore();}
+function drawRouteStyle(style,headF,p,t){
+  var pp=animD.pp,cols=animD.cols,wt=p.wt,glow=t.acc,n=pp.length,hi=Math.min(Math.round(headF),(cols?cols.length:n)-1);
+  if(style==='snake'){
+    strokeAnim(pp,null,0,n-1,wt*0.8,t.route,0.12,false);
+    var win=Math.max(6,(n-1)*0.10);strokeAnim(pp,cols,Math.max(0,headF-win),headF,wt*1.25,glow,1,true);
+  }else if(style==='comet'){
+    strokeAnim(pp,cols,0,headF,wt,glow,0.9,false);
+    var ct=Math.max(4,(n-1)*0.06);strokeAnim(pp,cols,Math.max(0,headF-ct),headF,wt*1.5,glow,1,true);
+  }else{ strokeAnim(pp,cols,0,headF,wt,glow,1,true); }
+  var h=ptAt(pp,headF);drawHead(h.x,h.y,wt,cols?cols[hi]:t.route,glow);
+}
+
+// ---- callout overlays ----
+function camFor(headF,prog,W,H){
+  var zMax=2.6,z,inT=0.14,outT=0.14;
+  if(prog<inT)z=1+(zMax-1)*easeInOut(prog/inT);
+  else if(prog>1-outT)z=1+(zMax-1)*easeInOut((1-prog)/outT);
+  else z=zMax;
+  var h=ptAt(animD.pp,headF),hw=W/(2*z),hh=H/(2*z);
+  return{z:z,x:Math.max(hw,Math.min(W-hw,h.x)),y:Math.max(hh,Math.min(H-hh,h.y))};
+}
+function drawPin(sx,sy,pin,t,fs,pop,W,H){
+  ctx.save();ctx.translate(sx,sy);ctx.scale(pop,pop);
+  var r=fs*0.5;
+  if(pin.label!=='Start'&&pin.label!=='Finish'){
+    var txt=pin.label+(pin.sub?'  '+pin.sub:'');
+    ctx.font='700 '+(fs*0.8)+"px 'DM Mono',monospace";
+    var tw=ctx.measureText(txt).width,padX=fs*0.45,padY=fs*0.32,bw=tw+padX*2,bh=fs*0.8+padY*2;
+    // Keep tag on-screen: clamp its centre horizontally, flip below marker if it'd run off the top.
+    var mg=fs*0.4,half=bw/2;
+    var lx=Math.max((mg-sx)/pop+half, Math.min(((W-mg)-sx)/pop-half, 0));
+    var above=(sy+(-r-fs*0.7-bh)*pop)>mg;
+    var ty=above?(-r-fs*0.7-bh):(r+fs*0.7);
+    ctx.strokeStyle='rgba(255,255,255,0.28)';ctx.lineWidth=fs*0.07;ctx.beginPath();ctx.moveTo(0,above?-r:r);ctx.lineTo(lx,above?ty+bh:ty);ctx.stroke();
+    ctx.fillStyle='rgba(0,0,0,0.6)';aRound(ctx,lx-half,ty,bw,bh,bh*0.28);ctx.fill();
+    ctx.fillStyle=t.acc;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,lx,ty+bh/2);
+  }
+  ctx.shadowColor=t.acc;ctx.shadowBlur=fs*0.9;ctx.fillStyle=t.acc;ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.fill();
+  ctx.shadowBlur=0;ctx.fillStyle=t.bg2;ctx.beginPath();ctx.arc(0,0,r*0.42,0,7);ctx.fill();
+  ctx.restore();
+}
+function drawPins(headF,t,W,H){
+  var s=Math.min(W,H),fs=s*0.030,span=Math.max(2,animD.pp.length*0.02);
+  animD.pins.forEach(function(pin){
+    if(headF<pin.idx-0.5)return;
+    var pop=easeOutBack(Math.min(1,(headF-pin.idx)/span));if(pop<=0.02)return;
+    var wp=animD.pp[Math.min(pin.idx,animD.pp.length-1)],sp=w2s(wp.x,wp.y,W,H);
+    drawPin(sp.x,sp.y,pin,t,fs,pop,W,H);
+  });
+}
+function drawHUD(headF,prog,t,W,H){
+  var s=Math.min(W,H),m=s*0.055,hi=Math.round(headF);
+  var rows=[['Distance',fmtDist(prog*animD.total)]];
+  if(animD.spd)rows.push(['Speed',fmtSpeed(animD.spd[Math.min(hi,animD.spd.length-1)]||0)]);
+  if(animD.ele&&animD.ele[Math.min(hi,animD.ele.length-1)]!=null)rows.push(['Elevation',fmtEle(animD.ele[Math.min(hi,animD.ele.length-1)])]);
+  if(animD.durReal)rows.push(['Time',fmtClock(prog*animD.durReal)]);
+  var labFs=s*0.018,valFs=s*0.044,y=m;
+  ctx.save();ctx.textAlign='left';ctx.textBaseline='top';ctx.shadowColor='rgba(0,0,0,0.6)';ctx.shadowBlur=s*0.012;
+  rows.forEach(function(r){
+    ctx.font='600 '+labFs+"px 'DM Mono',monospace";ctx.fillStyle=t.txt;ctx.globalAlpha=0.6;ctx.fillText(r[0].toUpperCase(),m,y);
+    ctx.globalAlpha=1;ctx.font='400 '+valFs+"px 'Bebas Neue',sans-serif";ctx.fillStyle=t.acc;ctx.fillText(r[1],m,y+labFs*1.25);
+    y+=labFs*1.25+valFs+s*0.022;
+  });
+  ctx.restore();
+}
+function drawProgress(prog,t,W,H){
+  var s=Math.min(W,H),mx=s*0.06,bw=W-mx*2,by=H-s*0.05,bh=Math.max(3,s*0.006);
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.16)';aRound(ctx,mx,by,bw,bh,bh/2);ctx.fill();
+  ctx.fillStyle=t.acc;aRound(ctx,mx,by,bw*prog,bh,bh/2);ctx.fill();
+  ctx.shadowColor=t.acc;ctx.shadowBlur=s*0.02;ctx.beginPath();ctx.arc(mx+bw*prog,by+bh/2,bh*1.9,0,7);ctx.fillStyle=t.acc;ctx.fill();
+  var dur=+gp('slAnimDur').value,fs=s*0.020;
+  ctx.shadowBlur=0;ctx.font='600 '+fs+"px 'DM Mono',monospace";ctx.fillStyle=t.txt;ctx.globalAlpha=0.8;ctx.textAlign='right';ctx.textBaseline='bottom';
+  ctx.fillText(fmtClock(prog*dur)+' / '+fmtClock(dur),W-mx,by-s*0.012);
+  ctx.restore();
+}
+function drawHero(headF,prog,t,W,H){
+  var stat=gp('heroStat').value,s=Math.min(W,H),hi=Math.round(headF),val,lab;
+  if(stat==='elevation'){val=animD.ele?fmtEle(animD.ele[Math.min(hi,animD.ele.length-1)]||0):'–';lab='ELEVATION';}
+  else if(stat==='speed'){val=animD.spd?fmtSpeed(animD.spd[Math.min(hi,animD.spd.length-1)]||0):'–';lab='SPEED';}
+  else{val=fmtDist(prog*animD.total);lab='DISTANCE';}
+  var bigFs=s*0.12,labFs=s*0.026,cx=W/2,y=s*0.085;
+  ctx.save();ctx.textAlign='center';ctx.shadowColor='rgba(0,0,0,0.55)';ctx.shadowBlur=s*0.02;ctx.textBaseline='top';
+  ctx.font='700 '+labFs+"px 'DM Mono',monospace";ctx.fillStyle=t.txt;ctx.globalAlpha=0.7;ctx.fillText(lab,cx,y);
+  ctx.globalAlpha=1;ctx.font='400 '+bigFs+"px 'Bebas Neue',sans-serif";ctx.fillStyle=t.acc;ctx.fillText(val,cx,y+labFs*1.4);
+  ctx.restore();
+}
+
+// ---- the frame ----
+function drawAnimFrame(prog){
+  if(!animD)return;
+  var p=getP(),t=TH[p.theme],wh=FMTS[p.fmt],W=wh[0],H=wh[1],style=gp('animStyle').value;
+  var headF=distToHeadF(prog*animD.total);
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle=t.bg2;ctx.fillRect(0,0,W,H);
+  animCam=(style==='camera')?camFor(headF,prog,W,H):null;
+  ctx.save();
+  if(animCam){ctx.translate(W/2,H/2);ctx.scale(animCam.z,animCam.z);ctx.translate(-animCam.x,-animCam.y);}
+  if(animBgC)ctx.drawImage(animBgC,0,0);
+  drawRouteStyle(style,headF,p,t);
+  ctx.restore();
+  if(gp('togPins').classList.contains('on'))drawPins(headF,t,W,H);
+  if(gp('togProg').classList.contains('on'))drawProgress(prog,t,W,H);
+  if(gp('togHud').classList.contains('on'))drawHUD(headF,prog,t,W,H);
+  if(gp('togHero').classList.contains('on'))drawHero(headF,prog,t,W,H);
+}
+function drawAnimStill(){
+  if(gp('animSection').style.display==='none'||!finalPts.length||animPlaying)return;
+  if(!animPrepared)prepAnim();
+  drawAnimFrame(animProg||0);
+}
+
+// ---- playback control ----
+function animLoop(){
+  if(!animPlaying)return;
+  var now=performance.now();animBase+=(now-animLast)/1000;animLast=now;
+  var dur=+gp('slAnimDur').value;
+  animProg=Math.min(1,animBase/dur);
+  drawAnimFrame(animProg);
+  if(animProg>=1){finishAnim();return;}
+  animRAF=requestAnimationFrame(animLoop);
+}
+function clearPendingVideo(){if(typeof pendingVideo!=='undefined'&&pendingVideo){resetRecordBtn();setAnimHint(DEFAULT_ANIM_HINT);}}
+function toggleAnim(){
+  if(!finalPts.length)return;
+  if(animPlaying){animPlaying=false;if(animRAF)cancelAnimationFrame(animRAF);gp('btnPlay').innerHTML='&#9654; Play';return;}
+  clearPendingVideo();
+  if(animProg===0||animProg>=1){prepAnim();animBase=0;animProg=0;}
+  animLast=performance.now();animPlaying=true;gp('btnPlay').innerHTML='&#10074;&#10074; Pause';
+  animRAF=requestAnimationFrame(animLoop);
+}
+function restartAnim(){
+  if(!finalPts.length)return;
+  clearPendingVideo();
+  if(animRAF)cancelAnimationFrame(animRAF);
+  prepAnim();animBase=0;animProg=0;animLast=performance.now();animPlaying=true;
+  gp('btnPlay').innerHTML='&#10074;&#10074; Pause';animRAF=requestAnimationFrame(animLoop);
+}
+function finishAnim(){animPlaying=false;gp('btnPlay').innerHTML='&#9654; Play';if(animOnDone){var f=animOnDone;animOnDone=null;f();}}
+function exitAnim(silent){
+  animPlaying=false;if(animRAF)cancelAnimationFrame(animRAF);
+  animBase=0;animProg=0;animPrepared=false;animOnDone=null;
+  clearPendingVideo();
+  if(gp('btnPlay'))gp('btnPlay').innerHTML='&#9654; Play';
+  if(!silent)render();
+}
+
+// ---- record to a video file (MediaRecorder) ----
+// MP4 (H.264) is what Apple Photos & Instagram accept — try every MP4 variant
+// first, then fall back to WebM (which Photos can't import).
+var pendingVideo=null;
+var DEFAULT_ANIM_HINT='Tip: pick <strong style="color:#c8b89a">Reel 9:16</strong> format for Instagram Reels/Stories. Recording captures the full play-through to a video file.';
+function pickMime(){
+  if(typeof MediaRecorder==='undefined')return'';
+  var c=['video/mp4;codecs=h264,aac','video/mp4;codecs=avc1.42E01E','video/mp4;codecs=h264','video/mp4',
+         'video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+  for(var i=0;i<c.length;i++){try{if(MediaRecorder.isTypeSupported(c[i]))return c[i];}catch(e){}}
+  return'';
+}
+function setAnimHint(html){var h=gp('animHint');if(h)h.innerHTML=html;}
+function resetRecordBtn(){pendingVideo=null;var b=gp('btnRecord');if(!b)return;b.innerHTML='&#9679; Record video';b.disabled=false;b.style.background='';b.style.color='';b.style.borderColor='';}
+function recordOrSave(){ if(pendingVideo){saveVideo();return;} startRecording(); }
+function startRecording(){
+  if(!finalPts.length||animPlaying)return;
+  if(typeof MediaRecorder==='undefined'||!C.captureStream){alert('Video recording is not supported in this browser. Try Safari, Chrome or Edge.');return;}
+  var mime=pickMime();prepAnim();
+  var stream=C.captureStream(30),rec,chunks=[],btn=gp('btnRecord');
+  try{rec=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:12000000}:undefined);}
+  catch(e){alert('Recording failed: '+e.message);return;}
+  rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);};
+  rec.onstop=function(){
+    var type=(chunks[0]&&chunks[0].type)||mime||'video/webm';
+    var ext=type.indexOf('mp4')>=0?'mp4':'webm';
+    pendingVideo={blob:new Blob(chunks,{type:type}),ext:ext};
+    btn.disabled=false;btn.style.background='#4ade80';btn.style.color='#08130a';btn.style.borderColor='#4ade80';
+    btn.innerHTML='&#128229; Save '+(ext==='mp4'?'MP4':'video')+' / Share';
+    setAnimHint(ext==='mp4'
+      ? 'Ready! Tap <strong style="color:#4ade80">Save / Share</strong> → on iPhone/iPad choose <strong>Save Video</strong> to drop it into Photos. On Mac it downloads an MP4 you can drag into Photos.'
+      : 'Recorded as WebM — Apple Photos & Instagram need MP4. For a file that saves straight to Photos, record in <strong style="color:#c8b89a">Safari</strong> (it always makes MP4). Tap Save to download the WebM anyway.');
+  };
+  btn.innerHTML='&#9679; Recording…';btn.disabled=true;btn.style.background='';btn.style.color='';
+  rec.start();
+  animBase=0;animProg=0;animLast=performance.now();animPlaying=true;gp('btnPlay').innerHTML='&#10074;&#10074; Pause';
+  animOnDone=function(){setTimeout(function(){if(rec.state!=='inactive')rec.stop();},300);};
+  animRAF=requestAnimationFrame(animLoop);
+}
+// Runs inside the user's tap → lets iOS show the share sheet ("Save Video" → Photos).
+function saveVideo(){
+  if(!pendingVideo)return;
+  var blob=pendingVideo.blob,ext=pendingVideo.ext,fname='route-animation.'+ext,type=blob.type||('video/'+ext);
+  var done=function(){resetRecordBtn();setAnimHint(DEFAULT_ANIM_HINT);hitCounter();document.getElementById('donateModal').classList.add('show');};
+  var file=null;try{file=new File([blob],fname,{type:type});}catch(e){}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file],title:'RouteArt route animation'}).then(done).catch(function(err){
+      if(err&&err.name==='AbortError')return; // user dismissed the share sheet — keep blob for retry
+      downloadBlob(blob,fname);done();
+    });
+  } else { downloadBlob(blob,fname);done(); }
+}
+function downloadBlob(blob,fname){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href);},4000);}
+
+if(gp('slAnimDur'))gp('slAnimDur').addEventListener('input',function(){gp('vAnimDur').textContent=this.value;drawAnimStill();});
 </script>
 </body>
 </html>

@@ -51,9 +51,25 @@ A single-file web app — no install, no backend, no account. Drop in a GPX file
 - Pace, duration
 - **Add any fact to the poster** with one click
 
+### Route Animation
+- **Reveal the route over a set time** (3–60s) — watch it draw itself, with the head following the path
+- **Four styles** — Draw / unspool, Comet trail, Snake / segment, and cinematic Camera follow + zoom
+- **Live callouts** that update as it plays:
+  - **HUD readout** — distance so far, current speed, current elevation, elapsed time
+  - **Milestone pins** — pop-up markers for highest point, top-speed point, start & finish
+  - **Progress bar + timer**
+  - **Big hero stat** — a large number (distance / elevation / speed) front-and-centre
+- Uses all your base poster settings — theme, colour gradient, map background, line weight
+- **Record to video** — captures the play-through, then a **Save / Share** step delivers it:
+  - On **iPhone / iPad** the native share sheet opens → **Save Video** drops it straight into **Photos**
+  - On **Mac** it saves an **MP4** you can drag into Photos
+  - Prefers **MP4 (H.264)** — the format Apple Photos & Instagram require. Record in **Safari** for guaranteed MP4 on any Apple device
+- **Reel 9:16** format made for Instagram Reels & Stories
+
 ### Export
 - **PNG** — full poster resolution (A3 portrait/landscape or square)
 - **SVG** — clean vector export for further editing in Illustrator / Inkscape
+- **Video** — animated route as `.webm`/`.mp4` (see Route Animation)
 
 ---
 
@@ -64,6 +80,7 @@ A single-file web app — no install, no backend, no account. Drop in a GPX file
 | Portrait A3 | 2480 × 3508 px |
 | Square | 3000 × 3000 px |
 | Landscape A3 | 3508 × 2480 px |
+| Reel 9:16 (video) | 1080 × 1920 px |
 
 ---
 
