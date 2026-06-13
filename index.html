@@ -22,6 +22,14 @@ header span{font-size:0.54rem;color:#999;letter-spacing:2px;text-transform:upper
 .panel{width:260px;min-width:260px;background:#0f0f0f;border-right:1px solid #1a1a1a;display:flex;flex-direction:column;overflow-y:auto;}
 .section{padding:12px 14px;border-bottom:1px solid #181818;}
 .slabel{font-size:0.63rem;letter-spacing:3px;text-transform:uppercase;color:#888;margin-bottom:8px;}
+/* Collapsible top-level sections — click the header to fold a section away */
+.section > .slabel{cursor:pointer;display:flex;align-items:center;gap:7px;user-select:none;transition:color .15s;margin-bottom:10px;}
+.section > .slabel:hover{color:#c8b89a;}
+.section > .slabel::before{content:'\25BE';font-size:0.58rem;color:#555;transition:transform .18s;display:inline-block;line-height:1;}
+.section > .slabel:hover::before{color:#c8b89a;}
+.section.collapsed > .slabel{margin-bottom:0;}
+.section.collapsed > .slabel::before{transform:rotate(-90deg);}
+.section.collapsed > *:not(.slabel){display:none!important;}
 .upload-zone{border:1px dashed #2a2a2a;border-radius:4px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
 .upload-zone:hover,.upload-zone.drag{border-color:#c8b89a;background:#161610;}
 .upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
@@ -264,6 +272,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
         <option value="mono">Mono (dark→bright)</option>
         <option value="terrain">Terrain (green→brown→white)</option>
       </select>
+      <div class="tog-row" style="margin-top:8px"><span class="tog-label">Show colour legend</span><div class="tog on" id="togLegend" onclick="this.classList.toggle('on');render()"></div></div>
     </div>
     <div class="ctrl"><label>Line weight <span id="vWt">2.5</span></label><input type="range" id="slWt" min="2" max="40" value="10"></div>
     <div class="ctrl"><label>Glow <span id="vGl">0.40</span></label><input type="range" id="slGl" min="0" max="20" value="8"></div>
@@ -323,11 +332,17 @@ canvas#overlay{position:absolute;top:0;left:0;}
       <select id="animStyle" onchange="if(animPrepared)prepAnim();drawAnimStill();">
         <option value="draw">Draw / unspool</option>
         <option value="comet">Comet trail</option>
+        <option value="trail">Trail / fading tail</option>
         <option value="snake">Snake / segment</option>
         <option value="camera">Camera follow + zoom</option>
+        <option value="cinematic">Cinematic fly-through</option>
+        <option value="spotlight">Spotlight reveal</option>
+        <option value="speedzoom">Speed-reactive zoom</option>
       </select>
     </div>
     <div class="ctrl"><label>Total time <span id="vAnimDur">12</span>s</label><input type="range" id="slAnimDur" min="3" max="60" value="12"></div>
+    <div class="tog-row"><span class="tog-label">Smooth ease in/out</span><div class="tog on" id="togEase" onclick="this.classList.toggle('on');drawAnimStill();"></div></div>
+    <div class="tog-row"><span class="tog-label">Loop preview</span><div class="tog" id="togLoop" onclick="this.classList.toggle('on');"></div></div>
     <div class="tog-row"><span class="tog-label">Live HUD readout</span><div class="tog on" id="togHud" onclick="this.classList.toggle('on');drawAnimStill();"></div></div>
     <div class="tog-row"><span class="tog-label">Milestone pins</span><div class="tog on" id="togPins" onclick="this.classList.toggle('on');drawAnimStill();"></div></div>
     <div class="tog-row"><span class="tog-label">Progress + timer</span><div class="tog on" id="togProg" onclick="this.classList.toggle('on');drawAnimStill();"></div></div>
@@ -843,13 +858,30 @@ function process(){
 }
 
 // PROJECT
+// Web-Mercator so the route lines up exactly with the map tiles (which are Mercator).
+// X and Y must share units — both in Mercator "radians", not raw degrees.
+function mercX(lon){return lon*Math.PI/180;}
+function mercY(lat){return Math.log(Math.tan(Math.PI/4+lat*Math.PI/360));}
+function invMercX(mx){return mx*180/Math.PI;}
+function invMercY(my){return (2*Math.atan(Math.exp(my))-Math.PI/2)*180/Math.PI;}
+// Inverse projection: canvas x/y → lat/lon, used to find what the poster frame covers.
+function unprojectWith(pr,x,y){return{lon:invMercX((x-pr.ox)/pr.sc+pr.mxMin),lat:invMercY(pr.myMax-(y-pr.oy)/pr.sc)};}
+// Shared projection params for a set of points → reused by both the route and the map tiles.
+function computeProjection(pts,W,H,pad){
+  var lats=pts.map(function(p){return p.lat;}),lons=pts.map(function(p){return p.lon;});
+  var mxMin=mercX(Math.min.apply(null,lons)),mxMax=mercX(Math.max.apply(null,lons));
+  var myMin=mercY(Math.min.apply(null,lats)),myMax=mercY(Math.max.apply(null,lats));
+  var px=Math.min(W,H)*pad,dW=W-px*2,dH=H-px*2;
+  var loR=(mxMax-mxMin)||1e-9,laR=(myMax-myMin)||1e-9;
+  var sc=Math.min(dW/loR,dH/laR);
+  var ox=px+(dW-loR*sc)/2,oy=px+(dH-laR*sc)/2;
+  return {mxMin:mxMin,myMax:myMax,sc:sc,ox:ox,oy:oy};
+}
+function projectWith(pr,lat,lon){return{x:pr.ox+(mercX(lon)-pr.mxMin)*pr.sc,y:pr.oy+(pr.myMax-mercY(lat))*pr.sc};}
 function project(pts,W,H,pad){
   if(!pts.length)return[];
-  var lats=pts.map(function(p){return p.lat;}),lons=pts.map(function(p){return p.lon;});
-  var mnLa=Math.min.apply(null,lats),mxLa=Math.max.apply(null,lats),mnLo=Math.min.apply(null,lons),mxLo=Math.max.apply(null,lons);
-  var px=Math.min(W,H)*pad,dW=W-px*2,dH=H-px*2,laR=mxLa-mnLa||1e-6,loR=mxLo-mnLo||1e-6;
-  var sc=Math.min(dW/loR,dH/laR),ox=px+(dW-loR*sc)/2,oy=px+(dH-laR*sc)/2;
-  return pts.map(function(p){return{x:ox+(p.lon-mnLo)*sc,y:oy+(mxLa-p.lat)*sc};});
+  var pr=computeProjection(pts,W,H,pad);
+  return pts.map(function(p){return projectWith(pr,p.lat,p.lon);});
 }
 
 // ═══════════════════════════════════════════════════
@@ -1113,17 +1145,19 @@ function loadTile(style, z, x, y, onReady) {
 function drawMapBackground(W, H, pad, mapPadFrac, mapStyle, mapOpacity) {
   if (!finalPts.length) return;
 
-  // Compute geographic bounds of the route + extra padding
-  var lats = finalPts.map(function(p) { return p.lat; });
-  var lons = finalPts.map(function(p) { return p.lon; });
-  var mnLat = Math.min.apply(null, lats), mxLat = Math.max.apply(null, lats);
-  var mnLon = Math.min.apply(null, lons), mxLon = Math.max.apply(null, lons);
+  // The route uses this projection; the map must use the SAME one so they align.
+  var pr = computeProjection(finalPts, W, H, pad);
 
-  // Add geographic padding to extend map beyond route
-  var latSpan = mxLat - mnLat || 0.001;
-  var lonSpan = mxLon - mnLon || 0.001;
-  var gpadLat = latSpan * mapPadFrac;
-  var gpadLon = lonSpan * mapPadFrac;
+  // Cover the WHOLE poster frame (not just the route's box) so the map never
+  // appears as a squeezed strip when the route is wide-but-short (or vice versa).
+  // Invert the canvas corners to geographic bounds, then add the extra padding
+  // as a margin of surrounding context beyond the frame edges.
+  var tl = unprojectWith(pr, 0, 0);          // top-left  → max lat, min lon
+  var br = unprojectWith(pr, W, H);          // bottom-right → min lat, max lon
+  var mnLat = Math.min(tl.lat, br.lat), mxLat = Math.max(tl.lat, br.lat);
+  var mnLon = Math.min(tl.lon, br.lon), mxLon = Math.max(tl.lon, br.lon);
+  var gpadLat = (mxLat - mnLat) * mapPadFrac;
+  var gpadLon = (mxLon - mnLon) * mapPadFrac;
   var bmLat = mnLat - gpadLat, bmxLat = mxLat + gpadLat;
   var bmLon = mnLon - gpadLon, bmxLon = mxLon + gpadLon;
 
@@ -1143,27 +1177,10 @@ function drawMapBackground(W, H, pad, mapPadFrac, mapStyle, mapOpacity) {
     tyMax = Math.floor(latToTileY(bmLat, zoom));
   }
 
-  // For each tile, compute where it sits in poster canvas coordinates
-  // We need to map tile geo-corners through the same projection as the route
-  // Build a projection that covers the PADDED bounds
-  var allCornerPts = [
-    {lat:bmLat,  lon:bmLon},  {lat:bmxLat, lon:bmLon},
-    {lat:bmLat,  lon:bmxLon}, {lat:bmxLat, lon:bmxLon}
-  ];
-  // Use the standard project() logic but for map bounds
-  var px = Math.min(W,H) * pad;
-  var dW = W - px*2, dH = H - px*2;
-  var laR = bmxLat - bmLat, loR = bmxLon - bmLon;
-  var sc = Math.min(dW / loR, dH / laR);
-  var ox = px + (dW - loR*sc) / 2;
-  var oy = px + (dH - laR*sc) / 2;
-
-  function geoToCanvas(lat, lon) {
-    return {
-      x: ox + (lon - bmLon) * sc,
-      y: oy + (bmxLat - lat) * sc
-    };
-  }
+  // Place tiles through the EXACT projection used for the route so map features
+  // line up with the track. Both are Web-Mercator, so each tile maps to a clean
+  // square with no distortion.
+  function geoToCanvas(lat, lon) { return projectWith(pr, lat, lon); }
 
   ctx.save();
   ctx.globalAlpha = mapOpacity;
@@ -1187,11 +1204,11 @@ function drawMapBackground(W, H, pad, mapPadFrac, mapStyle, mapOpacity) {
       var dy = c2.y - c1.y;
 
       if (img && img.complete && img.naturalWidth > 0) {
-        ctx.drawImage(img, c1.x, c1.y, dx, dy);
+        // Nudge edges by 1px to avoid hairline seams between tiles.
+        ctx.drawImage(img, c1.x, c1.y, dx + 1, dy + 1);
       } else {
-        // Placeholder while loading
-        ctx.fillStyle = '#1a1a1a';
-        ctx.fillRect(c1.x, c1.y, dx, dy);
+        // No solid placeholder — just kick off the load and re-render when ready,
+        // so we never flash dark blocks over the poster while tiles arrive.
         loadTile(mapStyle, zoom, tx, ty, function() {});
       }
     }
@@ -1365,7 +1382,7 @@ function render(){
           }
         }
         drawRouteGradient(gradPts,gradCols,p.wt,p.glow);
-        drawColorLegend(W,H,p.colorMode,p.colorRamp,t);
+        if(gp('togLegend').classList.contains('on'))drawColorLegend(W,H,p.colorMode,p.colorRamp,t);
       } else {
         drawRoute(projPts,t.route,p.wt,p.glow,false); // fallback: no data
       }
@@ -1964,6 +1981,18 @@ dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('
 dz.addEventListener('dragleave',function(){dz.classList.remove('drag');});
 dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
 
+// COLLAPSIBLE SECTIONS — click a section header to fold it away.
+// Keeps the long sidebar tidy; secondary sections start collapsed.
+(function(){
+  var COLLAPSED_BY_DEFAULT={Processing:1,'Add Elements':1};
+  Array.prototype.forEach.call(document.querySelectorAll('.panel > .section'),function(sec){
+    var lab=sec.querySelector(':scope > .slabel');if(!lab)return;
+    var name=lab.textContent.trim();
+    if(COLLAPSED_BY_DEFAULT[name])sec.classList.add('collapsed');
+    lab.addEventListener('click',function(){sec.classList.toggle('collapsed');});
+  });
+})();
+
 // POSTER COUNTER
 var COUNTER_BASE='https://api.counterapi.dev/v2/routeart-app/exports';
 function updateCountDisplay(val){
@@ -2071,9 +2100,17 @@ function drawRouteStyle(style,headF,p,t){
   if(style==='snake'){
     strokeAnim(pp,null,0,n-1,wt*0.8,t.route,0.12,false);
     var win=Math.max(6,(n-1)*0.10);strokeAnim(pp,cols,Math.max(0,headF-win),headF,wt*1.25,glow,1,true);
-  }else if(style==='comet'){
+  }else if(style==='comet'||style==='cinematic'){
     strokeAnim(pp,cols,0,headF,wt,glow,0.9,false);
     var ct=Math.max(4,(n-1)*0.06);strokeAnim(pp,cols,Math.max(0,headF-ct),headF,wt*1.5,glow,1,true);
+  }else if(style==='trail'){
+    // Faint full route, then a tail behind the head that brightens toward it.
+    strokeAnim(pp,null,0,n-1,wt*0.7,t.route,0.10,false);
+    var tl=Math.max(8,(n-1)*0.20),a0=Math.max(0,headF-tl),steps=20;
+    for(var ti=0;ti<steps;ti++){
+      var f1=a0+(headF-a0)*(ti/steps),f2=a0+(headF-a0)*((ti+1)/steps);
+      strokeAnim(pp,cols,f1,f2,wt,glow,0.12+0.88*((ti+1)/steps),ti>steps-4);
+    }
   }else{ strokeAnim(pp,cols,0,headF,wt,glow,1,true); }
   var h=ptAt(pp,headF);drawHead(h.x,h.y,wt,cols?cols[hi]:t.route,glow);
 }
@@ -2086,6 +2123,44 @@ function camFor(headF,prog,W,H){
   else z=zMax;
   var h=ptAt(animD.pp,headF),hw=W/(2*z),hh=H/(2*z);
   return{z:z,x:Math.max(hw,Math.min(W-hw,h.x)),y:Math.max(hh,Math.min(H-hh,h.y))};
+}
+// Cinematic fly-through: establishing shot → dive in → follow head deep → pull back to reveal.
+function cineCam(headF,prog,W,H){
+  var estab=0.10,dive=0.07,pull=0.18,zMax=3.6,z;
+  if(prog<estab)z=1;                                              // hold on the whole route
+  else if(prog<estab+dive)z=1+(zMax-1)*easeInOut((prog-estab)/dive); // dive in
+  else if(prog>1-pull)z=1+(zMax-1)*easeInOut((1-prog)/pull);      // pull back out
+  else z=zMax;                                                    // follow at full zoom
+  var h=ptAt(animD.pp,headF),hw=W/(2*z),hh=H/(2*z);
+  // Lead the head a little below frame-centre so you see where the track is heading.
+  var cy=h.y-hh*0.22;
+  return{z:z,x:Math.max(hw,Math.min(W-hw,h.x)),y:Math.max(hh,Math.min(H-hh,cy))};
+}
+// Speed-reactive zoom: punch in on slow/climbing sections, pull out when fast.
+function speedCam(headF,prog,W,H){
+  if(animD._spdRange===undefined){
+    var lo=1e9,hiv=-1e9;
+    if(animD.spd)for(var i=0;i<animD.spd.length;i++){var v=animD.spd[i]||0;if(v<lo)lo=v;if(v>hiv)hiv=v;}
+    animD._spdRange=(hiv>lo)?[lo,hiv]:[0,1];
+  }
+  // Average speed over a small window so the zoom glides instead of jittering.
+  var hi=Math.round(headF),win=Math.max(3,Math.round((animD.pp.length-1)*0.025)),sum=0,nn=0;
+  if(animD.spd)for(var k=hi-win;k<=hi+win;k++){if(k>=0&&k<animD.spd.length){sum+=animD.spd[k]||0;nn++;}}
+  var spd=nn?sum/nn:0,rng=animD._spdRange,f=Math.max(0,Math.min(1,(spd-rng[0])/((rng[1]-rng[0])||1)));
+  var zSlow=3.4,zFast=1.7,z=zSlow+(zFast-zSlow)*f,edge=0.10;
+  if(prog<edge)z=1+(z-1)*easeInOut(prog/edge);
+  else if(prog>1-edge)z=1+(z-1)*easeInOut((1-prog)/edge);
+  var h=ptAt(animD.pp,headF),hw=W/(2*z),hh=H/(2*z);
+  return{z:z,x:Math.max(hw,Math.min(W-hw,h.x)),y:Math.max(hh,Math.min(H-hh,h.y))};
+}
+// Spotlight reveal: dim the whole poster except a soft circle travelling with the head.
+function drawSpotlight(headF,W,H){
+  var h=ptAt(animD.pp,headF),s=Math.min(W,H),r=s*0.26;
+  var g=ctx.createRadialGradient(h.x,h.y,r*0.4,h.x,h.y,r*1.3);
+  g.addColorStop(0,'rgba(0,0,0,0)');
+  g.addColorStop(0.65,'rgba(0,0,0,0.5)');
+  g.addColorStop(1,'rgba(0,0,0,0.82)');
+  ctx.save();ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.restore();
 }
 function drawPin(sx,sy,pin,t,fs,pop,W,H){
   ctx.save();ctx.translate(sx,sy);ctx.scale(pop,pop);
@@ -2131,7 +2206,8 @@ function drawHUD(headF,prog,t,W,H){
   });
   ctx.restore();
 }
-function drawProgress(prog,t,W,H){
+function drawProgress(prog,rawProg,t,W,H){
+  if(rawProg==null)rawProg=prog;
   var s=Math.min(W,H),mx=s*0.06,bw=W-mx*2,by=H-s*0.05,bh=Math.max(3,s*0.006);
   ctx.save();
   ctx.fillStyle='rgba(255,255,255,0.16)';aRound(ctx,mx,by,bw,bh,bh/2);ctx.fill();
@@ -2139,7 +2215,7 @@ function drawProgress(prog,t,W,H){
   ctx.shadowColor=t.acc;ctx.shadowBlur=s*0.02;ctx.beginPath();ctx.arc(mx+bw*prog,by+bh/2,bh*1.9,0,7);ctx.fillStyle=t.acc;ctx.fill();
   var dur=+gp('slAnimDur').value,fs=s*0.020;
   ctx.shadowBlur=0;ctx.font='600 '+fs+"px 'DM Mono',monospace";ctx.fillStyle=t.txt;ctx.globalAlpha=0.8;ctx.textAlign='right';ctx.textBaseline='bottom';
-  ctx.fillText(fmtClock(prog*dur)+' / '+fmtClock(dur),W-mx,by-s*0.012);
+  ctx.fillText(fmtClock(rawProg*dur)+' / '+fmtClock(dur),W-mx,by-s*0.012);
   ctx.restore();
 }
 function drawHero(headF,prog,t,W,H){
@@ -2158,19 +2234,23 @@ function drawHero(headF,prog,t,W,H){
 function drawAnimFrame(prog){
   if(!animD)return;
   var p=getP(),t=TH[p.theme],wh=FMTS[p.fmt],W=wh[0],H=wh[1],style=gp('animStyle').value;
-  var headF=distToHeadF(prog*animD.total);
+  // Spatial progress: optionally eased so the head accelerates/decelerates smoothly.
+  // The on-screen clock stays linear (real time), so timing readouts remain accurate.
+  var sp=gp('togEase').classList.contains('on')?easeInOut(prog):prog;
+  var headF=distToHeadF(sp*animD.total);
   ctx.setTransform(1,0,0,1,0,0);
   ctx.fillStyle=t.bg2;ctx.fillRect(0,0,W,H);
-  animCam=(style==='camera')?camFor(headF,prog,W,H):null;
+  animCam=(style==='camera')?camFor(headF,prog,W,H):(style==='cinematic')?cineCam(headF,prog,W,H):(style==='speedzoom')?speedCam(headF,prog,W,H):null;
   ctx.save();
   if(animCam){ctx.translate(W/2,H/2);ctx.scale(animCam.z,animCam.z);ctx.translate(-animCam.x,-animCam.y);}
   if(animBgC)ctx.drawImage(animBgC,0,0);
   drawRouteStyle(style,headF,p,t);
   ctx.restore();
+  if(style==='spotlight')drawSpotlight(headF,W,H);
   if(gp('togPins').classList.contains('on'))drawPins(headF,t,W,H);
-  if(gp('togProg').classList.contains('on'))drawProgress(prog,t,W,H);
-  if(gp('togHud').classList.contains('on'))drawHUD(headF,prog,t,W,H);
-  if(gp('togHero').classList.contains('on'))drawHero(headF,prog,t,W,H);
+  if(gp('togProg').classList.contains('on'))drawProgress(sp,prog,t,W,H);
+  if(gp('togHud').classList.contains('on'))drawHUD(headF,sp,t,W,H);
+  if(gp('togHero').classList.contains('on'))drawHero(headF,sp,t,W,H);
 }
 function drawAnimStill(){
   if(gp('animSection').style.display==='none'||!finalPts.length||animPlaying)return;
@@ -2185,7 +2265,11 @@ function animLoop(){
   var dur=+gp('slAnimDur').value;
   animProg=Math.min(1,animBase/dur);
   drawAnimFrame(animProg);
-  if(animProg>=1){finishAnim();return;}
+  if(animProg>=1){
+    // Loop preview when enabled (but never while recording — that needs one clean pass).
+    if(gp('togLoop').classList.contains('on')&&!animOnDone){animBase=0;animProg=0;animLast=now;animRAF=requestAnimationFrame(animLoop);return;}
+    finishAnim();return;
+  }
   animRAF=requestAnimationFrame(animLoop);
 }
 function clearPendingVideo(){if(typeof pendingVideo!=='undefined'&&pendingVideo){resetRecordBtn();setAnimHint(DEFAULT_ANIM_HINT);}}
