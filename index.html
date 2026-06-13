@@ -110,6 +110,20 @@ canvas#overlay{position:absolute;top:0;left:0;}
 .field label{color:#aaa;display:block;margin-bottom:3px;font-size:0.56rem;}
 .modal-btns{display:flex;gap:6px;margin-top:12px;}
 .modal-btns .btn{margin-top:0;}
+/* Guided feature tour */
+#tourLayer{position:fixed;inset:0;z-index:400;display:none;}
+#tourLayer.show{display:block;}
+#tourHole{position:fixed;border-radius:6px;box-shadow:0 0 0 9999px rgba(8,8,8,0.74);transition:all .28s cubic-bezier(.4,0,.2,1);pointer-events:none;border:1.5px solid #c8b89a;}
+#tourBubble{position:fixed;width:248px;background:#161616;border:1px solid #2a2a2a;border-radius:6px;padding:13px 14px;box-shadow:0 10px 30px #000b;transition:all .28s cubic-bezier(.4,0,.2,1);}
+#tourBubble .tt{font-size:0.7rem;color:#c8b89a;font-family:'DM Serif Display',serif;margin-bottom:5px;}
+#tourBubble .td{font-size:0.63rem;color:#bbb;line-height:1.6;}
+#tourBubble .tf{display:flex;align-items:center;justify-content:space-between;margin-top:11px;}
+#tourBubble .tstep{font-size:0.56rem;color:#777;letter-spacing:1px;}
+#tourBubble .tbtns{display:flex;gap:6px;}
+.tbtn{padding:4px 10px;font-size:0.6rem;border-radius:3px;cursor:pointer;font-family:'DM Mono',monospace;border:1px solid #2a2a2a;background:transparent;color:#999;transition:all .15s;}
+.tbtn:hover{border-color:#c8b89a;color:#c8b89a;}
+.tbtn.pri{background:#c8b89a;color:#0e0e0e;border-color:#c8b89a;}
+.tbtn.pri:hover{background:#ddd0bb;}
 </style>
 </head>
 <body>
@@ -118,6 +132,12 @@ canvas#overlay{position:absolute;top:0;left:0;}
   <span>GPX Poster Studio</span>
   <div style="flex:1"></div>
   <div style="display:flex;gap:14px;align-items:center">
+    <div id="helpBtn" onclick="startTour()" title="Show a quick guided tour"
+         style="width:24px;height:24px;border-radius:50%;border:1px solid #2a2a2a;color:#999;
+                display:flex;align-items:center;justify-content:center;cursor:pointer;
+                font-size:0.8rem;transition:all .15s;flex-shrink:0"
+         onmouseover="this.style.borderColor='#c8b89a';this.style.color='#c8b89a'"
+         onmouseout="this.style.borderColor='#2a2a2a';this.style.color='#999'">?</div>
     <div style="text-align:right;line-height:1.3">
       <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:#c8b89a;letter-spacing:0.5px" id="exportCount">—</div>
       <div style="font-size:0.46rem;color:#888;letter-spacing:2px;text-transform:uppercase">Posters exported</div>
@@ -175,15 +195,25 @@ canvas#overlay{position:absolute;top:0;left:0;}
     <div id="mapControls" style="display:none;margin-bottom:8px">
       <div class="ctrl" style="margin-bottom:6px">
         <label style="margin-bottom:3px;display:block">Map style</label>
-        <select id="selMapStyle" onchange="clearTileCache();render()">
+        <select id="selMapStyle" onchange="onMapStyleChange()">
           <option value="osm">OpenStreetMap (standard)</option>
-          <option value="topo">OpenTopoMap (topographic)</option>
-          <option value="dark">CartoDB Dark Matter</option>
+          <option value="voyager">CartoDB Voyager (colourful)</option>
           <option value="light">CartoDB Positron (light)</option>
-          <option value="satellite">ESRI World Imagery</option>
-          <option value="cycle">OpenCycleMap</option>
-          <option value="outdoors">Thunderforest Outdoors</option>
+          <option value="dark">CartoDB Dark Matter</option>
+          <option value="graylight">ESRI Light Gray (minimal)</option>
+          <option value="graydark">ESRI Dark Gray (minimal)</option>
+          <option value="topo">OpenTopoMap (topographic)</option>
+          <option value="esritopo">ESRI World Topo</option>
+          <option value="natgeo">ESRI National Geographic</option>
+          <option value="satellite">ESRI World Imagery (satellite)</option>
+          <option value="watercolor">Stamen Watercolor &#9733; (key)</option>
+          <option value="toner">Stamen Toner &#9733; (key)</option>
         </select>
+      </div>
+      <div class="ctrl" id="stadiaKeyCtrl" style="display:none;margin-bottom:6px">
+        <label style="margin-bottom:3px;display:block">Stadia Maps API key</label>
+        <input type="text" id="inpStadiaKey" placeholder="paste your free key" oninput="onStadiaKeyInput(this.value)">
+        <div style="font-size:0.5rem;color:#666;line-height:1.5;margin-top:3px">Stamen styles are served by <a href="https://stadiamaps.com/stamen/" target="_blank" style="color:#8a8">Stadia Maps</a> &#8212; sign up free and paste an API key. Stored locally in your browser.</div>
       </div>
       <div class="ctrl">
         <label>Map opacity <span id="vMapOp">0.6</span></label>
@@ -193,7 +223,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
         <label>Extra padding <span id="vMapPad">20</span>%</label>
         <input type="range" id="slMapPad" min="0" max="60" value="20">
       </div>
-      <div style="font-size:0.5rem;color:#555;line-height:1.5">Tiles: OpenStreetMap / CartoDB / ESRI.<br>Usage subject to their terms.</div>
+      <div style="font-size:0.5rem;color:#555;line-height:1.5">Tiles: OpenStreetMap / CartoDB / ESRI / Stadia&#183;Stamen.<br>Usage subject to their terms.</div>
     </div>
     <div class="tog-row"><span class="tog-label">Background art</span><div class="tog on" id="togArtBg" onclick="layerVis.artBg=!layerVis.artBg;this.classList.toggle('on',layerVis.artBg);render()"></div></div>
     <div class="tog-row"><span class="tog-label">Base route</span><div class="tog on" id="togLayBase" onclick="layerVis.base=!layerVis.base;this.classList.toggle('on',layerVis.base);render()"></div></div>
@@ -1072,13 +1102,34 @@ var tileRenderPending = false; // debounce re-render after tiles load
 
 var TILE_URLS = {
   osm:       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-  topo:      'https://tile.opentopomap.org/{z}/{x}/{y}.png',
-  dark:      'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png',
+  voyager:   'https://cartodb-basemaps-a.global.ssl.fastly.net/rastertiles/voyager/{z}/{x}/{y}.png',
   light:     'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
+  dark:      'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png',
+  graylight: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+  graydark:  'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+  topo:      'https://tile.opentopomap.org/{z}/{x}/{y}.png',
+  esritopo:  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+  natgeo:    'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
   satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  cycle:     'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png',
-  outdoors:  'https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png'
+  // Stamen styles are hosted by Stadia Maps and need a free API key ({key}).
+  watercolor:'https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg?api_key={key}',
+  toner:     'https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}.png?api_key={key}'
 };
+// Styles that require a Stadia Maps API key.
+var STADIA_STYLES = {watercolor:1, toner:1};
+// Max zoom each style reliably serves tiles at (others use the global default).
+var TILE_MAXZOOM = {natgeo:12, esritopo:16, graylight:16, graydark:16, topo:16, watercolor:16, toner:18, voyager:20};
+function getStadiaKey(){ try { return localStorage.getItem('stadiaKey') || ''; } catch(e){ return ''; } }
+function onMapStyleChange(){
+  var needsKey = !!STADIA_STYLES[gp('selMapStyle').value];
+  gp('stadiaKeyCtrl').style.display = needsKey ? 'block' : 'none';
+  if(needsKey) gp('inpStadiaKey').value = getStadiaKey();
+  clearTileCache(); render();
+}
+function onStadiaKeyInput(v){
+  try { localStorage.setItem('stadiaKey', v.trim()); } catch(e){}
+  clearTileCache(); render();
+}
 
 // Lat/lon <-> tile number conversions (Mercator)
 function latToTileY(lat, zoom) {
@@ -1118,7 +1169,9 @@ function onMapToggle() {
 
 function getTileUrl(style, z, x, y) {
   var tpl = TILE_URLS[style] || TILE_URLS.osm;
-  return tpl.replace('{z}', z).replace('{x}', x).replace('{y}', y);
+  var url = tpl.replace('{z}', z).replace('{x}', x).replace('{y}', y);
+  if (url.indexOf('{key}') >= 0) url = url.replace('{key}', encodeURIComponent(getStadiaKey()));
+  return url;
 }
 
 function loadTile(style, z, x, y, onReady) {
@@ -1161,8 +1214,12 @@ function drawMapBackground(W, H, pad, mapPadFrac, mapStyle, mapOpacity) {
   var bmLat = mnLat - gpadLat, bmxLat = mxLat + gpadLat;
   var bmLon = mnLon - gpadLon, bmxLon = mxLon + gpadLon;
 
-  // Choose zoom and get tile range
+  // Choose zoom and get tile range. Some styles only have tiles up to a certain
+  // zoom (beyond that ESRI serves "Map data not yet available" placeholders), so
+  // clamp to each style's safe maximum.
   var zoom = chooseTileZoom(bmLat, bmxLat, bmLon, bmxLon, 7);
+  var maxZ = TILE_MAXZOOM[mapStyle];
+  if (maxZ && zoom > maxZ) zoom = maxZ;
   var txMin = Math.floor(lonToTileX(bmLon, zoom));
   var txMax = Math.floor(lonToTileX(bmxLon, zoom));
   var tyMin = Math.floor(latToTileY(bmxLat, zoom));  // note: Y flipped
@@ -2352,6 +2409,68 @@ function saveVideo(){
 function downloadBlob(blob,fname){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href);},4000);}
 
 if(gp('slAnimDur'))gp('slAnimDur').addEventListener('input',function(){gp('vAnimDur').textContent=this.value;drawAnimStill();});
+
+// ═══════════════════════════════════════════════════
+// GUIDED FEATURE TOUR — the ? icon walks through the main features
+// with callout bubbles pointing at each panel section.
+// ═══════════════════════════════════════════════════
+var TOUR_STEPS=[
+  {get:function(){return gp('dropZone');},                t:'Upload your route',  d:'Drop a .gpx file here (or click to browse) to begin. Everything else unlocks once a track is loaded.'},
+  {get:function(){return gp('togMap').closest('.section');}, t:'Layers & map',     d:'Toggle each layer on/off, and switch on a real map background under your track — pick from OSM, satellite, topo, watercolour and more.'},
+  {get:function(){return gp('selTheme').closest('.section');},t:'Style & colour',   d:'Choose a theme, colour the line by speed or elevation with a gradient, and set line weight, glow, padding and the poster format.'},
+  {get:function(){return gp('artType').closest('.section');}, t:'Add elements',     d:'Layer on titles, stat blocks, icons, photos and pointer lines. Drag them around the poster in Art mode.'},
+  {get:function(){return gp('animSection');},             t:'Animate & record',   d:'Bring the route to life — Draw, Comet, Cinematic, Spotlight and more — then record it straight to a video for Reels & Stories.'},
+  {get:function(){return gp('btnExport').closest('.section');},t:'Export',          d:'When it looks great, save a high-resolution PNG or a vector SVG.'}
+];
+var tourI=0, tourActive=[];
+function startTour(){
+  // Build the layer lazily so it always exists.
+  if(!gp('tourLayer')){
+    var l=document.createElement('div');l.id='tourLayer';
+    l.innerHTML='<div id="tourHole"></div><div id="tourBubble">'+
+      '<div class="tt" id="tourTitle"></div><div class="td" id="tourDesc"></div>'+
+      '<div class="tf"><span class="tstep" id="tourStep"></span>'+
+      '<span class="tbtns"><span class="tbtn" id="tourSkip" onclick="endTour()">Skip</span>'+
+      '<span class="tbtn" id="tourBack" onclick="tourGo(-1)">Back</span>'+
+      '<span class="tbtn pri" id="tourNext" onclick="tourGo(1)">Next</span></span></div></div>';
+    document.body.appendChild(l);
+    l.addEventListener('click',function(e){if(e.target===l)endTour();});
+  }
+  // Only include steps whose target is currently visible (e.g. Animate is hidden pre-upload).
+  tourActive=TOUR_STEPS.filter(function(s){var el=s.get();return el&&el.offsetWidth>0&&el.offsetHeight>0;});
+  if(!tourActive.length)return;
+  tourI=0;gp('tourLayer').classList.add('show');showTourStep();
+  window.addEventListener('keydown',tourKey);
+}
+function tourKey(e){if(e.key==='Escape')endTour();else if(e.key==='ArrowRight')tourGo(1);else if(e.key==='ArrowLeft')tourGo(-1);}
+function tourGo(d){tourI+=d;if(tourI<0)tourI=0;if(tourI>=tourActive.length){endTour();return;}showTourStep();}
+function endTour(){var l=gp('tourLayer');if(l)l.classList.remove('show');window.removeEventListener('keydown',tourKey);}
+function showTourStep(){
+  var step=tourActive[tourI],el=step.get();
+  if(!el){tourGo(1);return;}
+  // Un-collapse a target section so its content is visible during the tour.
+  var sec=el.classList&&el.classList.contains('section')?el:el.closest('.section');
+  if(sec)sec.classList.remove('collapsed');
+  el.scrollIntoView({block:'center',behavior:'smooth'});
+  // Position after the scroll settles.
+  setTimeout(function(){
+    var r=el.getBoundingClientRect(),pad=6;
+    var hole=gp('tourHole');
+    hole.style.left=(r.left-pad)+'px';hole.style.top=(r.top-pad)+'px';
+    hole.style.width=(r.width+pad*2)+'px';hole.style.height=(r.height+pad*2)+'px';
+    gp('tourTitle').textContent=step.t;gp('tourDesc').textContent=step.d;
+    gp('tourStep').textContent=(tourI+1)+' / '+tourActive.length;
+    gp('tourBack').style.visibility=tourI===0?'hidden':'visible';
+    gp('tourNext').textContent=(tourI===tourActive.length-1)?'Done':'Next';
+    // Bubble to the right of the panel, vertically aligned with the target, clamped on-screen.
+    var b=gp('tourBubble'),bw=248,bh=b.offsetHeight||140,gap=16;
+    var left=r.right+gap; if(left+bw>window.innerWidth-10)left=Math.max(10,r.left-bw-gap);
+    var top=Math.min(window.innerHeight-bh-10,Math.max(10,r.top+r.height/2-bh/2));
+    b.style.left=left+'px';b.style.top=top+'px';
+  },180);
+}
+// First-time visitors get the tour automatically (once).
+try{ if(!localStorage.getItem('tourSeen')){ localStorage.setItem('tourSeen','1'); setTimeout(startTour,600); } }catch(e){}
 </script>
 </body>
 </html>
