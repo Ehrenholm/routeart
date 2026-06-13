@@ -124,6 +124,16 @@ canvas#overlay{position:absolute;top:0;left:0;}
 .tbtn:hover{border-color:#c8b89a;color:#c8b89a;}
 .tbtn.pri{background:#c8b89a;color:#0e0e0e;border-color:#c8b89a;}
 .tbtn.pri:hover{background:#ddd0bb;}
+/* First-visit hint bubble anchored under the ? icon (instead of auto-starting the tour) */
+#tourHint{position:fixed;z-index:401;background:#161616;border:1px solid #2a2a2a;border-radius:6px;
+  padding:9px 28px 9px 12px;font-size:0.62rem;color:#bbb;line-height:1.5;max-width:210px;cursor:pointer;
+  box-shadow:0 8px 24px #000b;animation:hintIn .25s ease;}
+#tourHint b{color:#c8b89a;}
+#tourHint::before{content:'';position:absolute;top:-6px;right:13px;width:10px;height:10px;background:#161616;
+  border-left:1px solid #2a2a2a;border-top:1px solid #2a2a2a;transform:rotate(45deg);}
+#tourHint .th-close{position:absolute;top:4px;right:7px;color:#666;font-size:0.85rem;line-height:1;}
+#tourHint .th-close:hover{color:#c8b89a;}
+@keyframes hintIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
 /* Bottom-sheet chrome — hidden on desktop, shown in the mobile media query below */
 .sheet-handle{display:none;}
 .sheet-scrim{display:none;}
@@ -2089,13 +2099,13 @@ dz.addEventListener('dragleave',function(){dz.classList.remove('drag');});
 dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
 
 // COLLAPSIBLE SECTIONS — click a section header to fold it away.
-// Keeps the long sidebar tidy; secondary sections start collapsed.
+// On load everything starts collapsed except GPX File, for a tidy sidebar.
 (function(){
-  var COLLAPSED_BY_DEFAULT={Processing:1,'Add Elements':1};
+  var KEEP_OPEN={'GPX File':1};
   Array.prototype.forEach.call(document.querySelectorAll('.panel > .section'),function(sec){
     var lab=sec.querySelector(':scope > .slabel');if(!lab)return;
     var name=lab.textContent.trim();
-    if(COLLAPSED_BY_DEFAULT[name])sec.classList.add('collapsed');
+    if(!KEEP_OPEN[name])sec.classList.add('collapsed');
     lab.addEventListener('click',function(){sec.classList.toggle('collapsed');});
   });
 })();
@@ -2495,6 +2505,7 @@ var TOUR_STEPS=[
 ];
 var tourI=0, tourActive=[];
 function startTour(){
+  if(typeof closeTourHint==='function')closeTourHint();
   // Build the layer lazily so it always exists.
   if(!gp('tourLayer')){
     var l=document.createElement('div');l.id='tourLayer';
@@ -2563,8 +2574,23 @@ function positionTour(){
     b.style.left=l2+'px';b.style.top=t2+'px';
   }
 }
-// First-time visitors get the tour automatically (once).
-try{ if(!localStorage.getItem('tourSeen')){ localStorage.setItem('tourSeen','1'); setTimeout(startTour,600); } }catch(e){}
+// First-time visitors see a small hint by the ? icon — the tour only starts if they ask.
+function closeTourHint(){var h=gp('tourHint');if(h&&h.parentNode)h.parentNode.removeChild(h);try{localStorage.setItem('tourHintSeen','1');}catch(e){}}
+function showTourHint(){
+  var btn=gp('helpBtn');if(!btn||gp('tourHint'))return;
+  var h=document.createElement('div');h.id='tourHint';
+  h.innerHTML='👋 New here? <b>Take a quick tour</b><span class="th-close">×</span>';
+  document.body.appendChild(h);
+  var r=btn.getBoundingClientRect();
+  h.style.top=(r.bottom+10)+'px';
+  h.style.right=Math.max(8,(window.innerWidth-r.right))+'px';
+  h.addEventListener('click',function(e){
+    if(e.target.className==='th-close'){closeTourHint();return;}
+    closeTourHint();startTour();
+  });
+  setTimeout(closeTourHint,12000);
+}
+try{ if(!localStorage.getItem('tourHintSeen')) setTimeout(showTourHint,800); }catch(e){}
 </script>
 </body>
 </html>
