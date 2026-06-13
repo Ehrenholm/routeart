@@ -14,7 +14,7 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Bebas+Neue&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:#0e0e0e;color:#f0ece4;font-family:'DM Mono',monospace;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+body{background:#0e0e0e;color:#f0ece4;font-family:'DM Mono',monospace;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
 header{padding:12px 20px;border-bottom:1px solid #1a1a1a;display:flex;align-items:baseline;gap:12px;flex-shrink:0;}
 header h1{font-family:'DM Serif Display',serif;font-size:1.35rem;color:#f0ece4;}
 header span{font-size:0.54rem;color:#999;letter-spacing:2px;text-transform:uppercase;}
@@ -124,6 +124,52 @@ canvas#overlay{position:absolute;top:0;left:0;}
 .tbtn:hover{border-color:#c8b89a;color:#c8b89a;}
 .tbtn.pri{background:#c8b89a;color:#0e0e0e;border-color:#c8b89a;}
 .tbtn.pri:hover{background:#ddd0bb;}
+/* Bottom-sheet chrome — hidden on desktop, shown in the mobile media query below */
+.sheet-handle{display:none;}
+.sheet-scrim{display:none;}
+/* ── Mobile / iPhone layout ───────────────────────────────────────────────
+   Poster fills the screen; the control panel becomes a slide-up bottom sheet. */
+@media (max-width:760px){
+  .workspace{flex-direction:column;position:relative;}
+  .canvas-area{flex:1;min-height:0;}
+  /* Panel → bottom sheet */
+  .panel{position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;min-width:0;
+    max-height:85dvh;border-right:none;border-top:1px solid #242424;
+    border-radius:16px 16px 0 0;z-index:250;box-shadow:0 -12px 34px #0009;
+    transform:translateY(calc(100% - 54px));
+    transition:transform .3s cubic-bezier(.4,0,.2,1);overscroll-behavior:contain;}
+  body.sheet-open .panel{transform:translateY(0);}
+  /* Drag-handle header, sticky at the top of the sheet */
+  .sheet-handle{display:flex;flex-direction:column;align-items:center;gap:5px;
+    position:sticky;top:0;z-index:2;background:#0f0f0f;padding:9px 0 8px;cursor:pointer;
+    border-bottom:1px solid #181818;border-radius:16px 16px 0 0;}
+  .sheet-grip{width:38px;height:4px;border-radius:3px;background:#3a3a3a;}
+  .sheet-handle span{font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:#999;}
+  body.sheet-open .sheet-handle span::after{content:' \25BE';}
+  .sheet-handle span::after{content:' \25B4';}
+  /* Scrim behind an open sheet */
+  body.sheet-open .sheet-scrim{display:block;position:fixed;inset:0;z-index:249;
+    background:rgba(6,6,6,0.45);}
+  /* Bigger touch targets + no iOS focus-zoom (needs >=16px font on form controls) */
+  select,input[type=text]{font-size:16px;padding:9px 10px;}
+  .tog{width:42px;height:24px;border-radius:13px;}
+  .tog::after{width:18px;height:18px;top:3px;left:3px;}
+  .tog.on::after{left:21px;}
+  .tog-row{margin-bottom:11px;}
+  .tog-label,.ctrl label{font-size:0.8rem;}
+  .mbtn{padding:10px 4px;font-size:0.78rem;}
+  .chip{font-size:0.78rem;padding:5px 11px;}
+  .btn{padding:11px;font-size:0.74rem;}
+  .icon-cell{font-size:1.35rem;padding:6px 2px;}
+  input[type=range]{height:4px;}
+  input[type=range]::-webkit-slider-thumb{width:18px;height:18px;}
+  .section{padding:14px 16px;}
+  /* Tighter header */
+  header{padding:10px 14px;}
+  header h1{font-size:1.1rem;}
+  header span{display:none;}
+  #exportCount + div{display:none;}
+}
 </style>
 </head>
 <body>
@@ -152,7 +198,9 @@ canvas#overlay{position:absolute;top:0;left:0;}
   </div>
 </header>
 <div class="workspace">
+<div class="sheet-scrim" id="sheetScrim" onclick="toggleSheet(false)"></div>
 <div class="panel">
+  <div class="sheet-handle" onclick="toggleSheet()"><div class="sheet-grip"></div><span>Controls</span></div>
 
   <div class="section">
     <div class="slabel">GPX File</div>
@@ -2030,6 +2078,8 @@ function loadFile(f){
     gp('posterWrap').style.display='block';gp('btnExport').disabled=false;gp('btnSVG').disabled=false;
     gp('animSection').style.display='block';exitAnim(true);
     updateArtList();showTimeline();render();
+    // On mobile, collapse the sheet after a load so the new poster is revealed.
+    if(isMobile())toggleSheet(false);
   };rd.readAsText(f);
 }
 gp('fileInput').addEventListener('change',function(e){if(e.target.files[0])loadFile(e.target.files[0]);});
@@ -2411,6 +2461,27 @@ function downloadBlob(blob,fname){var a=document.createElement('a');a.href=URL.c
 if(gp('slAnimDur'))gp('slAnimDur').addEventListener('input',function(){gp('vAnimDur').textContent=this.value;drawAnimStill();});
 
 // ═══════════════════════════════════════════════════
+// MOBILE — bottom-sheet menu + responsive reflow
+// ═══════════════════════════════════════════════════
+function isMobile(){return matchMedia('(max-width:760px)').matches;}
+function toggleSheet(force){
+  if(force===undefined) document.body.classList.toggle('sheet-open');
+  else document.body.classList.toggle('sheet-open', !!force);
+}
+// On a phone, start with the sheet open so the upload zone is front and centre.
+if(isMobile())document.body.classList.add('sheet-open');
+// Re-fit the poster (and the tour) on resize / orientation change. render() already
+// sizes the canvas to the live canvas-area box, so a debounced render is all we need.
+var _resizeT=null;
+window.addEventListener('resize',function(){
+  clearTimeout(_resizeT);
+  _resizeT=setTimeout(function(){ if(rawPts.length)render(); positionTour(); },150);
+});
+window.addEventListener('orientationchange',function(){
+  setTimeout(function(){ if(rawPts.length)render(); positionTour(); },300);
+});
+
+// ═══════════════════════════════════════════════════
 // GUIDED FEATURE TOUR — the ? icon walks through the main features
 // with callout bubbles pointing at each panel section.
 // ═══════════════════════════════════════════════════
@@ -2436,6 +2507,8 @@ function startTour(){
     document.body.appendChild(l);
     l.addEventListener('click',function(e){if(e.target===l)endTour();});
   }
+  // On mobile, open the sheet first so the target sections are on-screen and measurable.
+  if(isMobile())toggleSheet(true);
   // Only include steps whose target is currently visible (e.g. Animate is hidden pre-upload).
   tourActive=TOUR_STEPS.filter(function(s){var el=s.get();return el&&el.offsetWidth>0&&el.offsetHeight>0;});
   if(!tourActive.length)return;
@@ -2461,6 +2534,9 @@ function showTourStep(){
   // then measure after two frames so the expand reflow is fully applied.
   el.scrollIntoView({block:'center'});
   requestAnimationFrame(function(){requestAnimationFrame(positionTour);});
+  // Re-measure once more after the bottom-sheet slide / scroll settles (mobile),
+  // so the first step isn't placed against a still-animating panel.
+  setTimeout(positionTour,340);
 }
 // Measure the current target and place the ring + bubble. Safe to call any time
 // (resize, post-reflow) — always re-reads the live rectangle.
@@ -2472,10 +2548,20 @@ function positionTour(){
   var hole=gp('tourHole');
   hole.style.left=(r.left-pad)+'px';hole.style.top=(r.top-pad)+'px';
   hole.style.width=(r.width+pad*2)+'px';hole.style.height=(r.height+pad*2)+'px';
-  var b=gp('tourBubble'),bw=248,bh=b.offsetHeight||140,gap=16;
-  var left=r.right+gap; if(left+bw>window.innerWidth-10)left=Math.max(10,r.left-bw-gap);
-  var top=Math.min(window.innerHeight-bh-10,Math.max(10,r.top+r.height/2-bh/2));
-  b.style.left=left+'px';b.style.top=top+'px';
+  var b=gp('tourBubble'),gap=16;
+  if(isMobile()){
+    // Phone: full-ish width, centred, above the ring (sections sit low in the sheet) else below.
+    var bw=Math.min(300,window.innerWidth-20);b.style.width=bw+'px';
+    var bh=b.offsetHeight||150;
+    var left=(window.innerWidth-bw)/2;
+    var top=r.top-bh-gap; if(top<10)top=Math.min(window.innerHeight-bh-10,r.bottom+gap);
+    b.style.left=left+'px';b.style.top=top+'px';
+  }else{
+    b.style.width='248px';var bw2=248,bh2=b.offsetHeight||140;
+    var l2=r.right+gap; if(l2+bw2>window.innerWidth-10)l2=Math.max(10,r.left-bw2-gap);
+    var t2=Math.min(window.innerHeight-bh2-10,Math.max(10,r.top+r.height/2-bh2/2));
+    b.style.left=l2+'px';b.style.top=t2+'px';
+  }
 }
 // First-time visitors get the tour automatically (once).
 try{ if(!localStorage.getItem('tourSeen')){ localStorage.setItem('tourSeen','1'); setTimeout(startTour,600); } }catch(e){}
