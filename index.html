@@ -2441,33 +2441,41 @@ function startTour(){
   if(!tourActive.length)return;
   tourI=0;gp('tourLayer').classList.add('show');showTourStep();
   window.addEventListener('keydown',tourKey);
+  window.addEventListener('resize',positionTour);
 }
 function tourKey(e){if(e.key==='Escape')endTour();else if(e.key==='ArrowRight')tourGo(1);else if(e.key==='ArrowLeft')tourGo(-1);}
 function tourGo(d){tourI+=d;if(tourI<0)tourI=0;if(tourI>=tourActive.length){endTour();return;}showTourStep();}
-function endTour(){var l=gp('tourLayer');if(l)l.classList.remove('show');window.removeEventListener('keydown',tourKey);}
+function endTour(){var l=gp('tourLayer');if(l)l.classList.remove('show');window.removeEventListener('keydown',tourKey);window.removeEventListener('resize',positionTour);}
 function showTourStep(){
   var step=tourActive[tourI],el=step.get();
   if(!el){tourGo(1);return;}
-  // Un-collapse a target section so its content is visible during the tour.
+  // Expand the target section FIRST so the layout reflows before we measure.
   var sec=el.classList&&el.classList.contains('section')?el:el.closest('.section');
   if(sec)sec.classList.remove('collapsed');
-  el.scrollIntoView({block:'center',behavior:'smooth'});
-  // Position after the scroll settles.
-  setTimeout(function(){
-    var r=el.getBoundingClientRect(),pad=6;
-    var hole=gp('tourHole');
-    hole.style.left=(r.left-pad)+'px';hole.style.top=(r.top-pad)+'px';
-    hole.style.width=(r.width+pad*2)+'px';hole.style.height=(r.height+pad*2)+'px';
-    gp('tourTitle').textContent=step.t;gp('tourDesc').textContent=step.d;
-    gp('tourStep').textContent=(tourI+1)+' / '+tourActive.length;
-    gp('tourBack').style.visibility=tourI===0?'hidden':'visible';
-    gp('tourNext').textContent=(tourI===tourActive.length-1)?'Done':'Next';
-    // Bubble to the right of the panel, vertically aligned with the target, clamped on-screen.
-    var b=gp('tourBubble'),bw=248,bh=b.offsetHeight||140,gap=16;
-    var left=r.right+gap; if(left+bw>window.innerWidth-10)left=Math.max(10,r.left-bw-gap);
-    var top=Math.min(window.innerHeight-bh-10,Math.max(10,r.top+r.height/2-bh/2));
-    b.style.left=left+'px';b.style.top=top+'px';
-  },180);
+  // Fill text now; positions are measured after layout + scroll settle.
+  gp('tourTitle').textContent=step.t;gp('tourDesc').textContent=step.d;
+  gp('tourStep').textContent=(tourI+1)+' / '+tourActive.length;
+  gp('tourBack').style.visibility=tourI===0?'hidden':'visible';
+  gp('tourNext').textContent=(tourI===tourActive.length-1)?'Done':'Next';
+  // Instant scroll (smooth scroll wouldn't have finished before we measured),
+  // then measure after two frames so the expand reflow is fully applied.
+  el.scrollIntoView({block:'center'});
+  requestAnimationFrame(function(){requestAnimationFrame(positionTour);});
+}
+// Measure the current target and place the ring + bubble. Safe to call any time
+// (resize, post-reflow) — always re-reads the live rectangle.
+function positionTour(){
+  if(!gp('tourLayer')||!gp('tourLayer').classList.contains('show'))return;
+  var step=tourActive[tourI];if(!step)return;
+  var el=step.get();if(!el||!el.offsetWidth)return;
+  var r=el.getBoundingClientRect(),pad=6;
+  var hole=gp('tourHole');
+  hole.style.left=(r.left-pad)+'px';hole.style.top=(r.top-pad)+'px';
+  hole.style.width=(r.width+pad*2)+'px';hole.style.height=(r.height+pad*2)+'px';
+  var b=gp('tourBubble'),bw=248,bh=b.offsetHeight||140,gap=16;
+  var left=r.right+gap; if(left+bw>window.innerWidth-10)left=Math.max(10,r.left-bw-gap);
+  var top=Math.min(window.innerHeight-bh-10,Math.max(10,r.top+r.height/2-bh/2));
+  b.style.left=left+'px';b.style.top=top+'px';
 }
 // First-time visitors get the tour automatically (once).
 try{ if(!localStorage.getItem('tourSeen')){ localStorage.setItem('tourSeen','1'); setTimeout(startTour,600); } }catch(e){}
