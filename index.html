@@ -170,6 +170,14 @@ canvas#overlay{position:absolute;top:0;left:0;}
 /* Hint chip (top-centre of stage) */
 .hint-chip{position:absolute;top:18px;left:50%;transform:translateX(-50%);font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.5px;color:var(--faint);background:#120f08aa;border:1px solid #211e15;border-radius:20px;padding:5px 13px;backdrop-filter:blur(6px);z-index:5;display:none;}
 .hint-chip.show{display:block;}
+.trim-panel{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:7px;background:#120f08dd;border:1px solid #211e15;border-radius:14px;padding:8px 10px;backdrop-filter:blur(8px);z-index:6;max-width:min(86vw,360px);}
+.tp-seg{display:flex;gap:4px;background:#0c0a05;border:1px solid var(--bctrl);border-radius:9px;padding:3px;}
+.tp-btn{font-family:'Geist Mono',monospace;font-size:11px;padding:5px 12px;border-radius:7px;cursor:pointer;color:var(--mut2);user-select:none;transition:all .15s;}
+.tp-btn.on{background:rgba(201,184,150,.16);color:var(--accent);}
+.tp-btn:hover:not(.on){color:var(--txt2);}
+.tp-msg{font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.3px;color:var(--faint);text-align:center;line-height:1.4;}
+.lap-opt{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:11.5px;color:var(--mut2);cursor:pointer;user-select:none;}
+.lap-opt input{accent-color:var(--accent);cursor:pointer;}
 /* "Generate styles" stage button */
 .gen-fab{position:absolute;top:16px;right:16px;display:none;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--bctrl);color:var(--accent);border-radius:11px;padding:9px 14px;font-family:'Geist',sans-serif;font-size:12.5px;font-weight:500;cursor:pointer;z-index:6;box-shadow:0 6px 20px rgba(0,0,0,.4);transition:all .15s;}
 .gen-fab:hover{border-color:var(--accent);background:#1a1609;}
@@ -352,6 +360,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
       <div class="stat-box"><div class="stat-val" id="sProc">-</div><div class="stat-key">Final pts</div></div>
     </div>
     <div class="lap-chips" id="lapChips"></div>
+    <label class="lap-opt" id="lapStopOpt" style="display:none"><input type="checkbox" id="cbStops" onchange="toggleStops()"> Also split laps at long stops</label>
     <div class="trim-info" id="trimInfo"></div>
     <button class="btn warn" id="btnClearEdits" onclick="clearEdits()" style="display:none">Clear edits</button>
   </div>
@@ -598,6 +607,15 @@ canvas#overlay{position:absolute;top:0;left:0;}
   <!-- hint chip -->
   <div class="hint-chip" id="hintChip"></div>
 
+  <!-- trim sub-toolbar (Crop ends / Finish line) -->
+  <div class="trim-panel" id="trimPanel" style="display:none">
+    <div class="tp-seg">
+      <span class="tp-btn on" id="tpCrop" onclick="setTrimSub('crop')">Crop ends</span>
+      <span class="tp-btn" id="tpFinish" onclick="setTrimSub('finish')">Finish line</span>
+    </div>
+    <span class="tp-msg" id="tpMsg"></span>
+  </div>
+
   <!-- floating toolbar -->
   <div class="float-toolbar" id="floatToolbar" style="display:none">
     <div class="tool-btn on" id="mView" onclick="setMode('view')">
@@ -770,13 +788,15 @@ function buildIconGrid(containerId,onSel){
 // STATE
 var rawPts=[],lapGroups=[],activeLaps=new Set();
 var rawEle=[],rawTime=[];
-var trimStart=0,trimEnd=1e9;
+var trimStartFrac=0,trimEndFrac=1;     // crop as a fraction [0,1] of the working route — one basis for click + timeline
+var finishLine=null;                    // {a:{lat,lon},b:{lat,lon}} — manual start/finish line; every crossing = a new lap
+var detectStopsOn=false;                // optional: also split laps at long stops/pauses
 var excludes=[];
 var finalPts=[],projPts=[];
 var trackFacts={};
 var artElements=[];
 var selectedArt=-1,ctxArt=-1;
-var mode='view',trimStep=0;
+var mode='view',trimStep=0,trimSub='crop',finishPend=0;  // trimSub: 'crop'|'finish'; finishPend: 0=set A next, 1=set B
 var dragExclude=null,dragArt=-1,dragArtOff={x:0,y:0},resizeHandle=-1,lineDragEnd=-1;
 var posterScale=1;
 var layerVis={base:true,rawGhost:false,mapBg:false,artBg:true,artMid:true,artFg:true};
@@ -974,49 +994,111 @@ function removeOutliers(pts,thr){
 }
 
 // LAP DETECTION
-function detectLaps(pts){
-  if(pts.length<30)return[{pts:pts}];
-  var start=pts[0];
+// Two strategies, both built on counting where the track crosses a finish line:
+//  • automatic — a virtual line at the start, perpendicular to the initial heading
+//  • manual    — a line the user draws on the poster (finishLine), every crossing = a lap
+// Optionally also split where the track dwells in one place (a long stop).
 
-  // Compute typical step size from first 200 points
-  var ds=[];
-  for(var i=1;i<Math.min(200,pts.length);i++)ds.push(hav(pts[i-1],pts[i]));
-  var medStep=med(ds);
+// Typical spacing between consecutive points (metres) from a sample of the track.
+function typicalStep(pts){
+  var ds=[];for(var i=1;i<Math.min(200,pts.length);i++)ds.push(hav(pts[i-1],pts[i]));
+  return ds.length?med(ds):10;
+}
 
-  // Tolerance: distance at which we consider "back at start"
-  // Use 3x median step OR 15m, whichever is larger, max 50m
-  var tol=Math.min(50,Math.max(medStep*3,15));
+// Do route segment a→b and line segment c→d cross? (Web-Mercator space, so it lines up with the poster.)
+function segHit(a,b,c,d){
+  var ax=mercX(a.lon),ay=mercY(a.lat),bx=mercX(b.lon),by=mercY(b.lat);
+  var cx=mercX(c.lon),cy=mercY(c.lat),dx=mercX(d.lon),dy=mercY(d.lat);
+  function ccw(px,py,qx,qy,rx,ry){return (ry-py)*(qx-px)>(qy-py)*(rx-px);}
+  return ccw(ax,ay,cx,cy,dx,dy)!==ccw(bx,by,cx,cy,dx,dy) &&
+         ccw(ax,ay,bx,by,cx,cy)!==ccw(ax,ay,bx,by,dx,dy);
+}
 
-  // Minimum points per lap: at least 5% of total, minimum 50
-  var minLapPts=Math.max(50,Math.floor(pts.length*0.05));
-
-  // Find all indices where the track returns close to start
-  // Use local-minimum detection: find the closest approach within each return window
-  var laps=[],s=0;
-  var i=minLapPts;
-  while(i<pts.length-10){
-    var d=hav(pts[i],start);
-    if(d<tol){
-      // We're near start — find the local minimum (closest point) in this window
-      var best=d,bestI=i;
-      var j=i+1;
-      while(j<Math.min(pts.length,i+Math.floor(minLapPts*0.3))&&hav(pts[j],start)<tol*2){
-        var dd=hav(pts[j],start);
-        if(dd<best){best=dd;bestI=j;}
-        j++;
-      }
-      // Only split if we have enough points in this lap
-      if(bestI-s>=minLapPts){
-        laps.push({pts:pts.slice(s,bestI+1)});
-        s=bestI;
-        i=bestI+minLapPts; // skip ahead to avoid re-detecting same crossing
-        continue;
-      }
-    }
-    i++;
+// Indices where the route crosses line A–B, with a minimum gap so one pass isn't double-counted.
+function crossingsOf(pts,A,B,minGap){
+  var idx=[],last=-minGap;
+  for(var i=1;i<pts.length;i++){
+    if(i-last>=minGap && segHit(pts[i-1],pts[i],A,B)){idx.push(i);last=i;}
   }
+  return idx;
+}
+
+// Build a virtual finish line at the start, perpendicular to the initial direction of travel.
+function autoFinishLine(pts,d){
+  var start=pts[0];
+  var mLat=111320,mLon=111320*Math.cos(start.lat*Math.PI/180)||1e-6;
+  var j=1;while(j<pts.length&&hav(start,pts[j])<Math.max(d,8))j++;
+  if(j>=pts.length)return null;
+  var ex=(pts[j].lon-start.lon)*mLon,ny=(pts[j].lat-start.lat)*mLat;
+  var hl=Math.sqrt(ex*ex+ny*ny)||1e-9;ex/=hl;ny/=hl;
+  var pex=-ny,pny=ex,half=Math.max(d*1.6,30); // metres each side of the start
+  function off(s){return {lat:start.lat+s*pny*half/mLat,lon:start.lon+s*pex*half/mLon};}
+  return {a:off(1),b:off(-1)};
+}
+
+// Indices where the track resumes after dwelling in one spot for a while (a stop).
+function detectStops(pts,tol,minDwell){
+  var bounds=[],stopR=Math.max(tol*0.8,10),anchor=0;
+  for(var i=1;i<pts.length;i++){
+    if(hav(pts[anchor],pts[i])>stopR){
+      if(i-1-anchor>=minDwell)bounds.push(i); // motion resumed after a real dwell
+      anchor=i;
+    }
+  }
+  return bounds;
+}
+
+function dedupeSorted(arr,minGap){
+  arr=arr.slice().sort(function(a,b){return a-b;});
+  var out=[],last=-1e9;
+  arr.forEach(function(v){if(v-last>=minGap){out.push(v);last=v;}});
+  return out;
+}
+
+function splitAt(pts,bounds,minLapPts){
+  if(!bounds.length)return[{pts:pts}];
+  var laps=[],s=0;
+  bounds.forEach(function(b){if(b-s>=minLapPts){laps.push({pts:pts.slice(s,b)});s=b;}});
   laps.push({pts:pts.slice(s)});
   return laps.length>1?laps:[{pts:pts}];
+}
+
+// Split using the user-drawn finish line — every crossing starts a new lap.
+function splitByFinishLine(pts,fl){
+  if(pts.length<10)return[{pts:pts}];
+  var minGap=Math.max(15,Math.floor(pts.length*0.01));
+  return splitAt(pts,crossingsOf(pts,fl.a,fl.b,minGap),Math.max(5,Math.floor(minGap*0.6)));
+}
+
+function detectLaps(pts,opts){
+  opts=opts||{};
+  if(pts.length<30)return[{pts:pts}];
+  var medStep=typicalStep(pts);
+  var tol=Math.min(50,Math.max(medStep*3,15));
+  var minLapPts=Math.max(40,Math.floor(pts.length*0.04));
+  // Primary: how many times does the track cross a finish line drawn at the start?
+  var line=autoFinishLine(pts,tol);
+  var bounds=line?crossingsOf(pts,line.a,line.b,minLapPts):[];
+  // Optional: also break the track wherever it stopped in one place for a while.
+  if(opts.stops){
+    bounds=dedupeSorted(bounds.concat(detectStops(pts,tol,Math.max(minLapPts*0.4,20))),Math.floor(minLapPts*0.5));
+  }
+  if(!bounds.length)return[{pts:pts}];
+  // Wandering, non-circuit tracks pass near the start incidentally and would
+  // otherwise over-segment. So: only keep boundaries that close a lap of a sensible
+  // length, fold a short final tail (cooldown) back in, and bail to a single lap
+  // unless the laps come out fairly even — i.e. it really was a lapped activity.
+  var total=totalDist(pts),minLapDist=Math.max(400,total*0.06);
+  var starts=[0];
+  bounds.forEach(function(b){if(totalDist(pts.slice(starts[starts.length-1],b))>=minLapDist)starts.push(b);});
+  var laps=starts.map(function(s,i){return{pts:pts.slice(s,i+1<starts.length?starts[i+1]:pts.length)};});
+  if(laps.length>1&&totalDist(laps[laps.length-1].pts)<minLapDist){
+    var tail=laps.pop();laps[laps.length-1].pts=laps[laps.length-1].pts.concat(tail.pts);
+  }
+  if(laps.length<2)return[{pts:pts}];
+  var d=laps.map(function(l){return totalDist(l.pts);});
+  if(Math.max.apply(null,d)/Math.min.apply(null,d)>2.6)return[{pts:pts}];
+  return laps;
 }
 
 // GAUSSIAN SMOOTH
@@ -1089,14 +1171,19 @@ function process(){
   if(!rawPts.length)return;
   var p=getP();
   var pts=removeOutliers(rawPts,p.out);
-  lapGroups=detectLaps(pts);
+  lapGroups=finishLine?splitByFinishLine(pts,finishLine):detectLaps(pts,{stops:detectStopsOn});
   updateLapChips();
   gp('sLaps').textContent=lapGroups.length;
   var sel=lapGroups.filter(function(_,i){return activeLaps.has(i);});
   var useLaps=sel.length?sel:lapGroups;
   var working=[];useLaps.forEach(function(l){working=working.concat(l.pts);});
-  var tS=Math.min(trimStart,working.length-1),tE=Math.min(trimEnd,working.length-1);
-  working=working.slice(tS,tE>=1e9?undefined:tE+1);
+  // Crop start/end by fraction of the route. Skipped while actively trimming so you
+  // see the whole track (and the S/E markers) — the cut takes effect back in View.
+  if(mode!=='trim'&&(trimStartFrac>0||trimEndFrac<1)&&working.length){
+    var tS=Math.floor(trimStartFrac*working.length);
+    var tE=Math.ceil(trimEndFrac*working.length);
+    working=working.slice(tS,Math.max(tS+1,tE));
+  }
   working=applyExcludes(working);
   if(p.sm>0)working=smooth(working,p.sm);
   if(p.pen)working=catmullRomTrace(working,p.penTen,p.penDen);
@@ -1690,15 +1777,41 @@ function render(){
 function drawOverlay(tempBox){
   octx.clearRect(0,0,OV.width,OV.height);var s=posterScale;
   if(mode==='trim'&&projPts.length){
-    function drawTM(idx,label,col){
-      if(idx<=0&&label==='S')return;if(idx>=1e9)return;
-      idx=Math.min(idx,projPts.length-1);var pt=projPts[idx];
-      octx.save();octx.fillStyle=col;octx.strokeStyle='#000';octx.lineWidth=1;
-      octx.beginPath();octx.arc(pt.x*s,pt.y*s,6,0,Math.PI*2);octx.fill();octx.stroke();
-      octx.fillStyle='#000';octx.font='bold 6px monospace';octx.textAlign='center';octx.textBaseline='middle';octx.fillText(label,pt.x*s,pt.y*s);
-      octx.strokeStyle=col+'44';octx.lineWidth=1;octx.setLineDash([4,4]);octx.beginPath();octx.moveTo(0,pt.y*s);octx.lineTo(OV.width,pt.y*s);octx.stroke();octx.restore();
+    // Lap boundary dots along the route, so you can see how it's currently split.
+    // (Approximate when only some laps are active — boundaries map by point fraction.)
+    if(lapGroups.length>1&&activeLaps.size===0){
+      var totLap=0;lapGroups.forEach(function(l){totLap+=l.pts.length;});
+      var acc=0;
+      octx.save();octx.fillStyle='#c8b89a';octx.strokeStyle='#000';octx.lineWidth=1;
+      for(var li=0;li<lapGroups.length-1;li++){
+        acc+=lapGroups[li].pts.length;
+        var bi=Math.min(projPts.length-1,Math.round(acc/totLap*projPts.length));
+        var bp=projPts[bi];if(!bp)continue;
+        octx.beginPath();octx.arc(bp.x*s,bp.y*s,3.5,0,Math.PI*2);octx.fill();octx.stroke();
+      }
+      octx.restore();
     }
-    drawTM(trimStart,'S','#4ade80');drawTM(trimEnd,'E','#f87171');
+    if(trimSub==='crop'){
+      function drawTM(frac,label,col){
+        if(frac<=0&&label==='S')return;if(frac>=1&&label==='E')return;
+        var idx=Math.min(projPts.length-1,Math.round(frac*projPts.length));var pt=projPts[idx];if(!pt)return;
+        octx.save();octx.fillStyle=col;octx.strokeStyle='#000';octx.lineWidth=1;
+        octx.beginPath();octx.arc(pt.x*s,pt.y*s,6,0,Math.PI*2);octx.fill();octx.stroke();
+        octx.fillStyle='#000';octx.font='bold 6px monospace';octx.textAlign='center';octx.textBaseline='middle';octx.fillText(label,pt.x*s,pt.y*s);
+        octx.strokeStyle=col+'44';octx.lineWidth=1;octx.setLineDash([4,4]);octx.beginPath();octx.moveTo(0,pt.y*s);octx.lineTo(OV.width,pt.y*s);octx.stroke();octx.restore();
+      }
+      drawTM(trimStartFrac,'S','#4ade80');drawTM(trimEndFrac,'E','#f87171');
+    } else if(trimSub==='finish'&&finishLine){
+      // Draw the user's finish line across the poster.
+      var p=getP(),wh=FMTS[p.fmt],W=wh[0],H=wh[1];
+      var pr=computeProjection(finalPts,W,H,p.pad);
+      var pa=projectWith(pr,finishLine.a.lat,finishLine.a.lon),pb=projectWith(pr,finishLine.b.lat,finishLine.b.lon);
+      octx.save();octx.strokeStyle='#f0abfc';octx.lineWidth=2;octx.setLineDash([7,4]);
+      octx.beginPath();octx.moveTo(pa.x*s,pa.y*s);octx.lineTo(pb.x*s,pb.y*s);octx.stroke();
+      octx.setLineDash([]);octx.fillStyle='#f0abfc';
+      [pa,pb].forEach(function(e){octx.beginPath();octx.arc(e.x*s,e.y*s,5,0,Math.PI*2);octx.fill();});
+      octx.restore();
+    }
   }
   excludes.forEach(function(b){
     if(b._sx==null)return;
@@ -1765,7 +1878,7 @@ var MODE_HINTS={
   art:'Drag elements to place them · right-click to edit'
 };
 function setMode(m){
-  mode=m;trimStep=0;dragExclude=null;dragArt=-1;
+  mode=m;trimStep=0;finishPend=0;dragExclude=null;dragArt=-1;
   ['mView','mTrim','mExcl','mArt'].forEach(function(id){var el=gp(id);if(el)el.classList.remove('on');});
   var map={view:'mView',trim:'mTrim',exclude:'mExcl',art:'mArt'};
   if(map[m]&&gp(map[m]))gp(map[m]).classList.add('on');
@@ -1773,12 +1886,34 @@ function setMode(m){
   // Only shown for the active editing tools, so it doesn't crowd the
   // "Suggest styles" button while you're just viewing.
   var hc=gp('hintChip');
-  if(hc){hc.innerHTML=MODE_HINTS[m]||'';hc.classList.toggle('show',rawPts.length>0&&m!=='view');}
+  if(hc){hc.innerHTML=MODE_HINTS[m]||'';hc.classList.toggle('show',rawPts.length>0&&m!=='view'&&m!=='trim');}
+  // Floating trim panel (Crop / Finish line + helper text) only while trimming.
+  var tp=gp('trimPanel');if(tp)tp.style.display=(m==='trim'&&rawPts.length)?'flex':'none';
+  if(m==='trim')setTrimSub(trimSub);
   OV.style.cursor=m==='view'?'default':m==='art'?'grab':'crosshair';
+  render();drawOverlay(null);   // render() so skipping/applying the crop redraws the poster
+}
+// Switch between the two trim sub-tools.
+function setTrimSub(sub){
+  trimSub=sub;trimStep=0;finishPend=0;
+  gp('tpCrop').classList.toggle('on',sub==='crop');
+  gp('tpFinish').classList.toggle('on',sub==='finish');
+  setTrimMsg(sub==='crop'
+    ? 'Click the route to set the start of the section to keep'
+    : (finishLine?'Finish line set — click two points to redraw it':'Click two points to draw a start/finish line across the track'));
   drawOverlay(null);
 }
 function getPos(e){var r=OV.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
 function closestProjPt(sx,sy){var best=1e18,idx=0;for(var i=0;i<projPts.length;i++){var pt=projPts[i],d=(pt.x*posterScale-sx)*(pt.x*posterScale-sx)+(pt.y*posterScale-sy)*(pt.y*posterScale-sy);if(d<best){best=d;idx=i;}}return idx;}
+// Screen (display px) → lat/lon, using the same projection the route is drawn with.
+function unprojectAt(sx,sy){
+  if(!finalPts.length)return null;
+  var p=getP(),wh=FMTS[p.fmt],W=wh[0],H=wh[1];
+  var pr=computeProjection(finalPts,W,H,p.pad);
+  return unprojectWith(pr,sx/posterScale,sy/posterScale);
+}
+// Update the floating trim panel's helper line (and keep the sidebar info in sync).
+function setTrimMsg(t){var m=gp('tpMsg');if(m)m.textContent=t;var ti=gp('trimInfo');if(ti){ti.style.display='block';ti.textContent=t;}}
 // Returns bounding box {cx,cy,hw,hh} in DISPLAY pixels for an element
 // hw/hh = half-width/height based on actual element size
 function elBounds(el){
@@ -1893,11 +2028,30 @@ OV.addEventListener('mousedown',function(e){
     }
     selectedArt=-1; resizeHandle=-1; lineDragEnd=-1; drawOverlay(null); return;
   }
-  if(mode==='trim'&&projPts.length){var idx=closestProjPt(pos.x,pos.y);if(trimStep===0){trimStart=idx;trimStep=1;gp('trimInfo').style.display='block';gp('trimInfo').textContent='Start #'+idx+'. Click end.';}else{if(idx<=trimStart){gp('trimInfo').textContent='End must be after start.';return;}trimEnd=idx;trimStep=0;gp('trimInfo').textContent='Trim #'+trimStart+' to #'+trimEnd;gp('btnClearEdits').style.display='block';render();}drawOverlay(null);}
+  if(mode==='trim'&&projPts.length){
+    if(trimSub==='finish'){
+      // Click two points to lay a start/finish line; every crossing splits a new lap.
+      var fp=unprojectAt(pos.x,pos.y);if(!fp)return;
+      if(finishPend===0){finishLine={a:fp,b:fp};finishPend=1;setTrimMsg('Click the other end of the finish line');}
+      else{finishLine.b=fp;finishPend=0;gp('btnClearEdits').style.display='block';render();}
+      drawOverlay(null);return;
+    }
+    // Crop: click sets the start cut, click again sets the end cut — as fractions along the route.
+    var idx=closestProjPt(pos.x,pos.y),frac=projPts.length>1?idx/(projPts.length-1):0;
+    if(trimStep===0){trimStartFrac=Math.min(frac,0.98);trimEndFrac=1;trimStep=1;setTrimMsg('Start set — click the end of the section to keep');}
+    else{
+      if(frac<=trimStartFrac){setTrimMsg('End must be after the start — click further along');return;}
+      trimEndFrac=frac;trimStep=0;setTrimMsg('Trimmed to '+Math.round(trimStartFrac*100)+'%–'+Math.round(trimEndFrac*100)+'% · switch to View to see it');
+      gp('btnClearEdits').style.display='block';
+    }
+    render();drawOverlay(null);
+  }
 });
 OV.addEventListener('mousemove',function(e){
   var pos=getPos(e);
   if(mode==='exclude'&&dragExclude){drawOverlay(normBox(dragExclude,pos));return;}
+  // Rubber-band the finish line to the cursor after the first point is placed.
+  if(mode==='trim'&&trimSub==='finish'&&finishPend===1&&finishLine){var fp=unprojectAt(pos.x,pos.y);if(fp){finishLine.b=fp;drawOverlay(null);}return;}
   // Line endpoint dragging — moves just one endpoint (rotate/extend)
   if(mode==='art'&&lineDragEnd>=0&&dragArt>=0){
     var el=artElements[dragArt];
@@ -1977,7 +2131,7 @@ OV.addEventListener('contextmenu',function(e){
   if(hit>=0){ctxArt=hit;selectedArt=hit;var m=gp('ctxMenu');m.style.display='block';m.style.left=(e.clientX+2)+'px';m.style.top=(e.clientY+2)+'px';}
 });
 document.addEventListener('click',function(e){if(!e.target.closest('.ctx-menu'))gp('ctxMenu').style.display='none';});
-function clearEdits(){trimStart=0;trimEnd=1e9;excludes=[];trimStep=0;gp('btnClearEdits').style.display='none';gp('trimInfo').style.display='none';render();}
+function clearEdits(){trimStartFrac=0;trimEndFrac=1;excludes=[];finishLine=null;trimStep=0;finishPend=0;gp('btnClearEdits').style.display='none';gp('trimInfo').style.display='none';if(mode==='trim')setTrimSub(trimSub);render();}
 
 // ART ELEMENTS
 var artDefaults={
@@ -2091,8 +2245,13 @@ function onArtTypeChange(){
   if(isIcon)buildIconGrid('iconGrid',function(ic){ICON_SEL=ic;});
 }
 
+// Toggle the optional "split at long stops" lap heuristic (ignored once a finish line is drawn).
+function toggleStops(){detectStopsOn=gp('cbStops').checked;render();}
+
 // LAP CHIPS
 function updateLapChips(){
+  // The stop-split option is only meaningful for automatic detection.
+  var opt=gp('lapStopOpt');if(opt)opt.style.display=(rawPts.length&&!finishLine)?'flex':'none';
   var c=gp('lapChips');c.innerHTML='';if(lapGroups.length<=1)return;
   var all=document.createElement('div');all.className='chip'+(activeLaps.size===0?' on':'');all.textContent='All';all.onclick=function(){activeLaps.clear();render();};c.appendChild(all);
   lapGroups.forEach(function(lap,i){var ch=document.createElement('div');ch.className='chip'+(activeLaps.has(i)?' on':'');var d=totalDist(lap.pts);ch.textContent='L'+(i+1)+' '+(d>1000?(d/1000).toFixed(1)+'k':Math.round(d)+'m');ch.onclick=function(){if(activeLaps.has(i))activeLaps.delete(i);else activeLaps.add(i);render();};c.appendChild(ch);});
@@ -2108,7 +2267,7 @@ bindSl('slMapOp','vMapOp',0.01,2);bindSl('slMapPad','vMapPad',1,0);
 // ═══════════════════════════════════════════════════
 // TIMELINE TRIM BAR
 // Shows a mini sparkline of speed or elevation over time.
-// Two draggable handles set trimStart/trimEnd by index.
+// Two draggable handles set trimStartFrac/trimEndFrac (0-1).
 // ═══════════════════════════════════════════════════
 var tlStart=0,tlEnd=1;          // 0-1 normalized positions
 var tlDragging=null;            // 'start'|'end'|null
@@ -2161,14 +2320,15 @@ function updateTL(x){
   } else if(tlDragging==='end'){
     tlEnd=Math.max(x,tlStart+0.02);
   }
-  // Map 0-1 to point indices
-  var n=rawPts.length;
-  trimStart=Math.floor(tlStart*n);
-  trimEnd=Math.floor(tlEnd*n);
+  // Same fraction basis the click-crop uses, so the two stay in sync.
+  trimStartFrac=tlStart;
+  trimEndFrac=tlEnd;
   // Update labels
+  var n=rawPts.length;
+  var iS=Math.min(n-1,Math.floor(tlStart*n)),iE=Math.min(n-1,Math.floor(tlEnd*n));
   var startPct=Math.round(tlStart*100),endPct=Math.round(tlEnd*100);
-  if(rawTime[0]&&rawTime[trimStart]&&rawTime[trimEnd]){
-    var t0=rawTime[0],t1=rawTime[trimStart],t2=rawTime[trimEnd];
+  if(rawTime[0]&&rawTime[iS]&&rawTime[iE]){
+    var t0=rawTime[0],t1=rawTime[iS],t2=rawTime[iE];
     function fmtTime(ms){var s=Math.round((ms-t0)/1000);var m=Math.floor(s/60);return m+'m'+(s%60)+'s';}
     gp('tlStartLabel').textContent=fmtTime(t1);
     gp('tlEndLabel').textContent=fmtTime(t2);
@@ -2189,6 +2349,21 @@ function drawTimeline(){
 
   // Background
   c.fillStyle='#111';c.fillRect(0,0,w,h);
+
+  // Lap bands — alternating tint + dividers + numbers, so laps read at a glance.
+  if(lapGroups.length>1){
+    var totL=0;lapGroups.forEach(function(l){totL+=l.pts.length;});
+    var fx=0;
+    for(var li=0;li<lapGroups.length;li++){
+      var fx2=fx+lapGroups[li].pts.length/totL;
+      var x0=fx*w,x1=fx2*w;
+      c.fillStyle=(li%2)?'#c8b89a14':'#c8b89a08';
+      c.fillRect(x0,0,x1-x0,h);
+      if(li>0){c.strokeStyle='#c8b89a66';c.lineWidth=1;c.beginPath();c.moveTo(x0,0);c.lineTo(x0,h);c.stroke();}
+      if(x1-x0>14){c.fillStyle='#c8b89a99';c.font='8px monospace';c.textAlign='center';c.textBaseline='top';c.fillText('L'+(li+1),(x0+x1)/2,1);}
+      fx=fx2;
+    }
+  }
 
   // Sparkline — use elevation if available, else point index as flat line
   var vals=rawEle.filter(function(e){return e!==null;}).length>10?rawEle:null;
@@ -2241,7 +2416,7 @@ function drawTimeline(){
 }
 
 function clearTimeline(){
-  tlStart=0;tlEnd=1;trimStart=0;trimEnd=1e9;
+  tlStart=0;tlEnd=1;trimStartFrac=0;trimEndFrac=1;
   gp('tlStartLabel').textContent='0%';
   gp('tlEndLabel').textContent='100%';
   gp('btnClearTimeline').style.display='none';
@@ -2262,7 +2437,7 @@ function loadFile(f){
     var parsed=parseGPX(e.target.result);
     rawPts=parsed.pts;rawEle=parsed.ele;rawTime=parsed.time;
     if(!rawPts.length){gp('statusbar').textContent='No track points found';return;}
-    lapGroups=[];activeLaps.clear();trimStart=0;trimEnd=1e9;excludes=[];artElements=[];selectedArt=-1;
+    lapGroups=[];activeLaps.clear();trimStartFrac=0;trimEndFrac=1;finishLine=null;finishPend=0;excludes=[];artElements=[];selectedArt=-1;
     clearTileCache();
     trackFacts=calcFacts(rawPts,rawEle,rawTime);renderFacts(trackFacts);
     // Loaded-file card (Source section) + top-bar file chip
