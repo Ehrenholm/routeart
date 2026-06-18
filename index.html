@@ -12,104 +12,197 @@
 <meta property="og:url" content="https://ehrenholm.github.io/routeart">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Bebas+Neue&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Bebas+Neue&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+/* ── Design tokens (RouteArt Studio redesign) ─────────────────────────── */
+:root{
+  --accent:#c9b896; --accent-txt:#17150f;
+  --app:#0b0a08; --panel:#0e0d0a; --surface:#141209; --surface2:#1c1a12;
+  --hover:#211e15; --hover2:#252118;
+  --border:#1d1b16; --bsub:#16140f; --bsub2:#1f1c14; --bsub3:#232017; --bctrl:#2a2820;
+  --tog-off:#2b2922;
+  --txt:#efe9dd; --txt2:#cfc8b8; --lbl:#b8b2a6; --mut:#9a9385; --mut2:#8f897c;
+  --faint:#6f6a5e; --faint2:#5c574c; --faint3:#4c483e;
+  --ok:#6cc08a; --danger:#6a4040;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:#0e0e0e;color:#f0ece4;font-family:'DM Mono',monospace;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
-header{padding:12px 20px;border-bottom:1px solid #1a1a1a;display:flex;align-items:baseline;gap:12px;flex-shrink:0;}
-header h1{font-family:'DM Serif Display',serif;font-size:1.35rem;color:#f0ece4;}
-header span{font-size:0.54rem;color:#999;letter-spacing:2px;text-transform:uppercase;}
+body{background:var(--app);color:var(--txt);font-family:'Geist',system-ui,sans-serif;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#2a2823;border-radius:6px;border:2px solid #0f0e0b;}
+::-webkit-scrollbar-thumb:hover{background:#3a382f;}
+@keyframes fadeup{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── TOP BAR ──────────────────────────────────────────────────────────── */
+header{height:58px;flex-shrink:0;display:flex;align-items:center;gap:18px;padding:0 18px;border-bottom:1px solid var(--border);background:var(--panel);}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-mark{width:26px;height:26px;border-radius:7px;background:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(201,184,150,.25);flex-shrink:0;}
+header h1{font-family:'DM Serif Display',serif;font-size:21px;letter-spacing:.2px;line-height:1;color:var(--txt);}
+.brand-tag{font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--faint);text-transform:uppercase;}
+.file-chip{display:flex;align-items:center;gap:9px;padding:6px 14px;background:var(--surface);border:1px solid var(--bsub3);border-radius:9px;max-width:60vw;}
+.file-chip .fc-name{font-family:'Geist Mono',monospace;font-size:12px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.file-chip .fc-div{width:1px;height:13px;background:var(--bctrl);flex-shrink:0;}
+.fc-replace{font-family:'Geist',sans-serif;font-size:11px;color:var(--mut2);background:none;border:none;cursor:pointer;padding:0;position:relative;flex-shrink:0;}
+.fc-replace:hover{color:var(--txt2);}
+.fc-replace input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.export-count .ec-num{font-family:'Geist Mono',monospace;font-size:13px;color:var(--accent);}
+.export-count .ec-lbl{font-size:8.5px;letter-spacing:1.8px;color:var(--faint);text-transform:uppercase;}
+.export-btn{display:flex;align-items:center;gap:8px;background:var(--accent);color:var(--accent-txt);border:none;border-radius:9px;padding:9px 15px;font-family:'Geist',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 2px 10px rgba(201,184,150,.22);transition:filter .15s;}
+.export-btn:hover{filter:brightness(1.07);}
+.export-menu{display:none;position:absolute;top:46px;right:0;background:#16140e;border:1px solid var(--bctrl);border-radius:11px;padding:6px;width:200px;z-index:50;box-shadow:0 16px 40px rgba(0,0,0,.55);flex-direction:column;gap:2px;}
+.export-menu.show{display:flex;}
+.export-row{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border-radius:7px;cursor:pointer;background:none;border:none;width:100%;text-align:left;color:var(--txt);font-family:'Geist',sans-serif;}
+.export-row:hover:not(:disabled){background:var(--hover);}
+.export-row span:first-child{font-size:12.5px;}
+.export-row span:last-child{font-family:'Geist Mono',monospace;font-size:9.5px;color:var(--faint);}
+.export-row:disabled{opacity:.4;cursor:not-allowed;}
+.support-pill{display:flex;align-items:center;gap:6px;border:1px solid var(--bctrl);color:var(--txt2);border-radius:20px;padding:8px 13px;font-size:11.5px;text-decoration:none;white-space:nowrap;transition:all .15s;}
+.support-pill:hover{border-color:var(--accent);color:var(--accent);}
+.help-dot{width:24px;height:24px;border-radius:50%;border:1px solid var(--bctrl);color:var(--mut2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.8rem;transition:all .15s;flex-shrink:0;}
+.help-dot:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── WORKSPACE / INSPECTOR ────────────────────────────────────────────── */
 .workspace{display:flex;flex:1;min-height:0;}
-.panel{width:260px;min-width:260px;background:#0f0f0f;border-right:1px solid #1a1a1a;display:flex;flex-direction:column;overflow-y:auto;}
-.section{padding:12px 14px;border-bottom:1px solid #181818;}
-.slabel{font-size:0.63rem;letter-spacing:3px;text-transform:uppercase;color:#888;margin-bottom:8px;}
+.panel{width:322px;min-width:322px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+.section{border-bottom:1px solid var(--bsub);padding:0;}
+.slabel{font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);}
 /* Collapsible top-level sections — click the header to fold a section away */
-.section > .slabel{cursor:pointer;display:flex;align-items:center;gap:7px;user-select:none;transition:color .15s;margin-bottom:10px;}
-.section > .slabel:hover{color:#c8b89a;}
-.section > .slabel::before{content:'\25BE';font-size:0.58rem;color:#555;transition:transform .18s;display:inline-block;line-height:1;}
-.section > .slabel:hover::before{color:#c8b89a;}
-.section.collapsed > .slabel{margin-bottom:0;}
-.section.collapsed > .slabel::before{transform:rotate(-90deg);}
+.section > .slabel{cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;transition:background .15s;padding:15px 18px;}
+.section > .slabel:hover{background:#100f0b;}
+.section > .slabel::after{content:'\25BE';font-size:11px;color:var(--faint2);transition:transform .2s;display:inline-block;line-height:1;}
+.section.collapsed > .slabel::after{transform:rotate(-90deg);}
+.section > *:not(.slabel){padding-left:18px;padding-right:18px;}
+.section > *:not(.slabel):last-child{padding-bottom:18px;}
 .section.collapsed > *:not(.slabel){display:none!important;}
-.upload-zone{border:1px dashed #2a2a2a;border-radius:4px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
-.upload-zone:hover,.upload-zone.drag{border-color:#c8b89a;background:#161610;}
+.upload-zone{border:1px dashed var(--bctrl);border-radius:11px;padding:18px 10px;text-align:center;cursor:pointer;transition:all .2s;position:relative;background:var(--surface);}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:#1a1609;}
 .upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
-.uico{font-size:1.1rem;margin-bottom:3px;}
-.utxt{font-size:0.68rem;color:#888;line-height:1.5;}
-.utxt strong{color:#c8b89a;display:block;}
-.file-ok{font-size:0.67rem;color:#4ade80;margin-top:5px;display:none;}
-.ctrl{margin-bottom:9px;}
-.ctrl label{display:flex;justify-content:space-between;font-size:0.67rem;color:#aaa;margin-bottom:3px;}
-.ctrl label span{color:#c8b89a;}
-input[type=range]{-webkit-appearance:none;width:100%;height:2px;background:#1e1e1e;border-radius:2px;outline:none;}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:#c8b89a;cursor:pointer;}
-input[type=text]{width:100%;background:#131313;border:1px solid #222;color:#f0ece4;padding:5px 7px;font-family:'DM Mono',monospace;font-size:0.68rem;border-radius:3px;outline:none;}
-input[type=text]:focus{border-color:#c8b89a;}
-select{width:100%;background:#131313;border:1px solid #222;color:#f0ece4;padding:5px 7px;font-family:'DM Mono',monospace;font-size:0.68rem;border-radius:3px;outline:none;cursor:pointer;}
-select:focus{border-color:#c8b89a;}
-.tog-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
-.tog-label{font-size:0.67rem;color:#aaa;}
-.tog{width:28px;height:15px;background:#222;border-radius:8px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
-.tog.on{background:#c8b89a;}
-.tog::after{content:'';position:absolute;width:9px;height:9px;background:#f0ece4;border-radius:50%;top:3px;left:3px;transition:left .2s;}
-.tog.on::after{left:16px;}
-.btn{width:100%;padding:8px;background:#c8b89a;color:#0e0e0e;border:none;font-family:'DM Mono',monospace;font-size:0.68rem;font-weight:500;letter-spacing:1px;text-transform:uppercase;border-radius:3px;cursor:pointer;transition:background .15s;margin-top:3px;}
-.btn:hover{background:#ddd0bb;}
-.btn:disabled{background:#181818;color:#444;cursor:not-allowed;}
-.btn.sec{background:transparent;border:1px solid #2a2a2a;color:#888;margin-top:4px;}
-.btn.sec:hover{border-color:#c8b89a;color:#c8b89a;}
-.btn.warn{background:#180a0a;border:1px solid #481818;color:#c06060;margin-top:4px;font-size:0.64rem;}
-.btn.warn:hover{background:#281010;}
-.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
-.stat-box{background:#111;border-radius:3px;padding:7px;}
-.stat-val{font-size:0.78rem;color:#c8b89a;}
-.stat-key{font-size:0.48rem;color:#888;margin-top:1px;letter-spacing:1px;text-transform:uppercase;}
-.lap-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
-.chip{font-size:0.63rem;padding:2px 7px;border-radius:2px;cursor:pointer;border:1px solid #2a2a2a;color:#888;transition:all .15s;user-select:none;}
-.chip.on{border-color:#c8b89a;color:#c8b89a;background:#130f05;}
+.uico{font-size:1.2rem;margin-bottom:5px;}
+.utxt{font-size:0.72rem;color:var(--mut2);line-height:1.5;}
+.utxt strong{color:var(--accent);display:block;}
+/* Loaded-file card (shown via JS after a GPX loads) */
+.file-ok{display:none;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--bsub3);border-radius:11px;padding:12px;font-size:13px;color:var(--txt);margin-top:0;}
+.file-ok.show{display:flex;}
+.file-ok .fo-tile{width:38px;height:38px;border-radius:9px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.file-ok .fo-meta{flex:1;min-width:0;}
+.file-ok .fo-name{font-size:13px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.file-ok .fo-sub{font-family:'Geist Mono',monospace;font-size:10px;color:var(--faint);margin-top:2px;}
+.file-ok .fo-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px #6cc08a99;flex-shrink:0;}
+.ctrl{margin-bottom:14px;}
+.ctrl label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--lbl);margin-bottom:9px;}
+.ctrl label span{font-family:'Geist Mono',monospace;color:var(--accent);}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:#2a2823;border-radius:3px;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:15px;height:15px;border-radius:50%;background:#1a1813;border:3px solid var(--accent);cursor:pointer;transition:transform .12s;box-shadow:0 1px 4px rgba(0,0,0,.5);}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#1a1813;border:3px solid var(--accent);cursor:pointer;}
+input[type=text]{width:100%;background:var(--surface);border:1px solid var(--bctrl);color:var(--txt);padding:9px 11px;font-family:'Geist Mono',monospace;font-size:12px;border-radius:9px;outline:none;}
+input[type=text]:focus{border-color:var(--accent);}
+select{width:100%;background:var(--surface);border:1px solid var(--bctrl);color:var(--txt);padding:9px 11px;font-family:'Geist',sans-serif;font-size:12.5px;border-radius:9px;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5L6 8l3.5-3.5' stroke='%238f897c' stroke-width='1.3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px;}
+select:focus{border-color:var(--accent);}
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;}
+.tog-label{font-size:12.5px;color:var(--txt2);}
+.tog{width:36px;height:20px;background:var(--tog-off);border-radius:11px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.tog.on{background:var(--accent);}
+.tog::after{content:'';position:absolute;width:14px;height:14px;background:var(--txt);border-radius:50%;top:3px;left:3px;transition:transform .2s;}
+.tog.on::after{transform:translateX(16px);background:var(--accent-txt);}
+.btn{width:100%;padding:10px;background:var(--accent);color:var(--accent-txt);border:none;font-family:'Geist',sans-serif;font-size:12.5px;font-weight:600;border-radius:9px;cursor:pointer;transition:filter .15s;margin-top:8px;box-shadow:0 2px 10px rgba(201,184,150,.18);}
+.btn:hover{filter:brightness(1.07);}
+.btn:disabled{background:var(--surface2);color:var(--faint2);cursor:not-allowed;box-shadow:none;}
+.btn.sec{background:var(--surface2);border:1px solid var(--bctrl);color:var(--txt2);box-shadow:none;}
+.btn.sec:hover{border-color:var(--accent);color:var(--accent);filter:none;}
+.btn.warn{background:#180a0a;border:1px solid #481818;color:#c06060;font-size:11.5px;box-shadow:none;}
+.btn.warn:hover{background:#281010;filter:none;}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.stat-box{background:var(--surface);border:1px solid var(--bsub2);border-radius:10px;padding:11px 12px;}
+.stat-val{font-family:'Geist Mono',monospace;font-size:16px;color:var(--txt);}
+.stat-key{font-size:9px;color:var(--faint);margin-top:3px;letter-spacing:1.4px;text-transform:uppercase;}
+.lap-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.chip{font-family:'Geist Mono',monospace;font-size:11px;padding:5px 11px;border-radius:7px;cursor:pointer;border:1px solid var(--bctrl);color:var(--mut2);transition:all .15s;user-select:none;}
+.chip.on{border-color:var(--accent);color:var(--accent);background:#1a1609;}
 .chip:hover{border-color:#555;color:#bbb;}
-.mode-btns{display:flex;gap:3px;margin-bottom:7px;flex-wrap:wrap;}
-.mbtn{flex:1;min-width:38px;padding:4px 2px;background:#111;border:1px solid #222;color:#888;font-family:'DM Mono',monospace;font-size:0.62rem;border-radius:3px;cursor:pointer;text-align:center;transition:all .15s;user-select:none;line-height:1.3;}
-.mbtn.on{border-color:#c8b89a;color:#c8b89a;background:#130f05;}
-.mbtn:hover:not(.on){border-color:#444;color:#bbb;}
-.hint{font-size:0.65rem;color:#aaa;line-height:1.6;margin-bottom:5px;display:none;}
-.trim-info{font-size:0.64rem;color:#4ade80aa;margin-top:4px;display:none;}
-.art-list{display:flex;flex-direction:column;gap:3px;margin-top:5px;}
-.art-item{background:#111;border:1px solid #1e1e1e;border-radius:3px;padding:5px 7px;font-size:0.64rem;color:#999;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
-.art-item:hover{border-color:#333;color:#ddd;}
-.art-item.sel{border-color:#c8b89a;color:#c8b89a;}
-.art-del{color:#481818;cursor:pointer;padding:0 3px;font-size:0.65rem;flex-shrink:0;}
+.mode-btns{display:flex;gap:7px;margin-bottom:8px;flex-wrap:wrap;}
+.mbtn{flex:1;min-width:38px;padding:10px 6px;background:var(--surface2);border:1px solid var(--bctrl);color:var(--txt2);font-family:'Geist',sans-serif;font-size:12px;border-radius:9px;cursor:pointer;text-align:center;transition:all .15s;user-select:none;line-height:1.3;}
+.mbtn.on{border-color:var(--accent);color:var(--accent);background:#1a1609;}
+.mbtn:hover:not(.on){border-color:var(--accent);color:var(--accent);}
+.hint{font-size:11.5px;color:var(--mut2);line-height:1.6;margin-bottom:8px;display:none;}
+.trim-info{font-size:11px;color:#6cc08acc;margin-top:6px;display:none;}
+.art-list{display:flex;flex-direction:column;gap:5px;margin-top:11px;}
+.art-item{background:var(--surface);border:1px solid var(--bsub2);border-radius:9px;padding:9px 11px;font-size:12px;color:var(--txt2);display:flex;justify-content:space-between;align-items:center;gap:9px;cursor:pointer;}
+.art-item:hover{border-color:#333;color:var(--txt);}
+.art-item.sel{border-color:var(--accent);color:var(--accent);}
+.art-del{color:var(--danger);cursor:pointer;padding:0 3px;font-size:12px;flex-shrink:0;}
 .art-del:hover{color:#f08080;}
-.icon-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;max-height:130px;overflow-y:auto;margin-top:5px;background:#0a0a0a;border-radius:3px;padding:4px;}
-.icon-cell{font-size:1.1rem;text-align:center;padding:3px 1px;border-radius:3px;cursor:pointer;border:1px solid transparent;line-height:1.3;}
-.icon-cell:hover{background:#222;border-color:#444;}
-.icon-cell.sel{background:#1a1508;border-color:#c8b89a;}
-.facts-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-top:6px;}
-.fact-box{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:3px;padding:6px 7px;}
-.fact-val{font-size:0.75rem;color:#c8b89a;font-family:'DM Mono',monospace;}
-.fact-lbl{font-size:0.56rem;color:#888;letter-spacing:1px;text-transform:uppercase;margin-top:1px;display:flex;justify-content:space-between;align-items:center;}
-.fact-add{color:#c8b89a55;cursor:pointer;font-size:0.7rem;font-weight:bold;padding:0 2px;line-height:1;flex-shrink:0;}
-.fact-add:hover{color:#c8b89a;}
-.canvas-area{flex:1;display:flex;align-items:center;justify-content:center;background:#070707;position:relative;overflow:hidden;}
-#timelineCanvas{border:1px solid #222;border-radius:3px;cursor:crosshair;}
+.icon-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;max-height:130px;overflow-y:auto;margin-top:8px;background:#0a0a0a;border-radius:9px;padding:6px;}
+.icon-cell{font-size:1.1rem;text-align:center;padding:3px 1px;border-radius:6px;cursor:pointer;border:1px solid transparent;line-height:1.3;}
+.icon-cell:hover{background:var(--hover);border-color:#444;}
+.icon-cell.sel{background:#1a1508;border-color:var(--accent);}
+.facts-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:0;}
+.fact-box{background:var(--surface);border:1px solid var(--bsub2);border-radius:10px;padding:11px 12px;}
+.fact-val{font-size:14px;color:var(--txt);font-family:'Geist Mono',monospace;}
+.fact-lbl{font-size:9px;color:var(--faint);letter-spacing:1.4px;text-transform:uppercase;margin-top:4px;display:flex;justify-content:space-between;align-items:center;}
+.fact-add{color:#c9b89655;cursor:pointer;font-size:0.85rem;font-weight:bold;padding:0 2px;line-height:1;flex-shrink:0;}
+.fact-add:hover{color:var(--accent);}
+.add-row{display:flex;gap:7px;}
+.add-row select{flex:1;}
+.add-btn{background:var(--surface2);border:1px solid var(--bctrl);color:var(--accent);border-radius:9px;width:40px;flex-shrink:0;font-size:18px;cursor:pointer;transition:background .15s;}
+.add-btn:hover{background:var(--hover2);}
+/* ── STAGE ────────────────────────────────────────────────────────────── */
+.canvas-area{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;min-width:0;background:radial-gradient(120% 120% at 50% 0%,#121009 0%,#070605 78%);}
+.canvas-area::before{content:'';position:absolute;inset:0;background-image:radial-gradient(#ffffff05 1px,transparent 1px);background-size:22px 22px;pointer-events:none;}
+#timelineCanvas{border:1px solid var(--bctrl);border-radius:8px;cursor:crosshair;}
 #mapControls select{margin-bottom:0;}
-.poster-wrap{display:none;position:relative;user-select:none;}
+.poster-wrap{display:none;position:relative;user-select:none;border-radius:3px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px #1a1812;animation:fadeup .5s ease;}
 canvas#poster{display:block;}
 canvas#overlay{position:absolute;top:0;left:0;}
-.empty{text-align:center;color:#1e1e1e;}
+.empty{text-align:center;color:#2a261d;position:relative;z-index:1;}
 .empty .big{font-size:2.5rem;margin-bottom:8px;}
-.empty p{font-size:0.6rem;letter-spacing:2px;}
-.statusbar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:0.52rem;color:#333;letter-spacing:2px;white-space:nowrap;}
-.ctx-menu{position:fixed;background:#161616;border:1px solid #2a2a2a;border-radius:4px;padding:4px;z-index:200;display:none;min-width:120px;box-shadow:0 8px 24px #000b;}
-.ctx-item{padding:5px 10px;font-size:0.56rem;color:#888;cursor:pointer;border-radius:2px;}
-.ctx-item:hover{background:#1e1e1e;color:#c8b89a;}
+.empty p{font-size:0.7rem;letter-spacing:2px;color:var(--faint2);}
+.statusbar{position:absolute;bottom:8px;left:12px;font-family:'Geist Mono',monospace;font-size:0.52rem;color:#4c483e;letter-spacing:1px;white-space:nowrap;z-index:2;}
+/* Floating toolbar (bottom-centre of stage) */
+.float-toolbar{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:#141209ee;backdrop-filter:blur(12px);border:1px solid var(--bctrl);border-radius:14px;padding:6px;box-shadow:0 14px 40px rgba(0,0,0,.5);z-index:5;}
+.tool-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:9px;cursor:pointer;user-select:none;background:transparent;color:var(--mut2);font-size:12px;font-weight:500;transition:all .15s;}
+.tool-btn.on{background:rgba(201,184,150,.14);color:var(--accent);}
+.tool-btn:hover:not(.on){color:var(--txt2);}
+.tool-div{width:1px;height:22px;background:var(--bctrl);margin:0 4px;}
+.zoom-group{display:flex;align-items:center;gap:2px;padding-right:4px;}
+.zoom-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;color:var(--mut2);font-size:15px;transition:background .15s;}
+.zoom-btn:hover{background:var(--hover);}
+.zoom-val{font-family:'Geist Mono',monospace;font-size:11px;color:var(--mut2);width:42px;text-align:center;}
+/* Hint chip (top-centre of stage) */
+.hint-chip{position:absolute;top:18px;left:50%;transform:translateX(-50%);font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.5px;color:var(--faint);background:#120f08aa;border:1px solid #211e15;border-radius:20px;padding:5px 13px;backdrop-filter:blur(6px);z-index:5;display:none;}
+.hint-chip.show{display:block;}
+/* "Generate styles" stage button */
+.gen-fab{position:absolute;top:16px;right:16px;display:none;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--bctrl);color:var(--accent);border-radius:11px;padding:9px 14px;font-family:'Geist',sans-serif;font-size:12.5px;font-weight:500;cursor:pointer;z-index:6;box-shadow:0 6px 20px rgba(0,0,0,.4);transition:all .15s;}
+.gen-fab:hover{border-color:var(--accent);background:#1a1609;}
+.gen-fab.show{display:flex;}
+.ctx-menu{position:fixed;background:#16140e;border:1px solid var(--bctrl);border-radius:11px;padding:6px;z-index:200;display:none;min-width:130px;box-shadow:0 16px 40px rgba(0,0,0,.55);}
+.ctx-item{padding:9px 11px;font-size:12px;color:var(--txt2);cursor:pointer;border-radius:7px;}
+.ctx-item:hover{background:var(--hover);color:var(--accent);}
 .modal-bg{position:fixed;inset:0;background:#0009;z-index:300;display:none;align-items:center;justify-content:center;}
 .modal-bg.show{display:flex;}
-.modal{background:#141414;border:1px solid #252525;border-radius:5px;padding:18px;width:292px;font-size:0.6rem;max-height:90vh;overflow-y:auto;}
-.modal-title{font-size:0.54rem;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:11px;}
-.field{margin-bottom:8px;}
-.field label{color:#aaa;display:block;margin-bottom:3px;font-size:0.56rem;}
-.modal-btns{display:flex;gap:6px;margin-top:12px;}
+.modal{background:#141414;border:1px solid #252525;border-radius:11px;padding:18px;width:300px;font-size:0.62rem;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:13px;}
+.field{margin-bottom:11px;}
+.field label{color:var(--lbl);display:block;margin-bottom:6px;font-size:11.5px;}
+.modal-btns{display:flex;gap:8px;margin-top:14px;}
 .modal-btns .btn{margin-top:0;}
+/* ── Style proposal overlay (Generate 3 versions) ─────────────────────── */
+.gen-overlay{position:fixed;inset:0;background:rgba(8,7,5,.78);backdrop-filter:blur(7px);z-index:320;display:none;flex-direction:column;align-items:center;justify-content:center;padding:30px;}
+.gen-overlay.show{display:flex;}
+.gen-head{text-align:center;margin-bottom:22px;}
+.gen-head h2{font-family:'DM Serif Display',serif;font-size:24px;color:var(--txt);margin-bottom:6px;}
+.gen-head p{font-size:12.5px;color:var(--mut2);}
+.gen-grid{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;max-width:1100px;}
+.gen-card{width:300px;background:var(--panel);border:1px solid var(--bctrl);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .18s;display:flex;flex-direction:column;animation:fadeup .4s ease backwards;}
+.gen-card:hover{border-color:var(--accent);transform:translateY(-4px);box-shadow:0 18px 44px rgba(0,0,0,.5);}
+.gen-card .gc-thumb{width:100%;aspect-ratio:1/1.1;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid var(--bsub);}
+.gen-card .gc-thumb img{max-width:100%;max-height:100%;display:block;}
+.gen-card .gc-body{padding:14px 16px;}
+.gen-card .gc-name{font-family:'Geist',sans-serif;font-size:14px;font-weight:600;color:var(--txt);margin-bottom:5px;}
+.gen-card .gc-why{font-size:11.5px;color:var(--mut2);line-height:1.5;}
+.gen-card .gc-pick{margin-top:11px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);}
+.gen-spinner{font-size:13px;color:var(--mut2);font-family:'Geist Mono',monospace;}
+.gen-close{position:absolute;top:20px;right:24px;color:var(--mut2);font-size:1.6rem;cursor:pointer;line-height:1;}
+.gen-close:hover{color:var(--accent);}
 /* Guided feature tour */
 #tourLayer{position:fixed;inset:0;z-index:400;display:none;}
 #tourLayer.show{display:block;}
@@ -151,60 +244,88 @@ canvas#overlay{position:absolute;top:0;left:0;}
   body.sheet-open .panel{transform:translateY(0);}
   /* Drag-handle header, sticky at the top of the sheet */
   .sheet-handle{display:flex;flex-direction:column;align-items:center;gap:5px;
-    position:sticky;top:0;z-index:2;background:#0f0f0f;padding:9px 0 8px;cursor:pointer;
-    border-bottom:1px solid #181818;border-radius:16px 16px 0 0;}
-  .sheet-grip{width:38px;height:4px;border-radius:3px;background:#3a3a3a;}
-  .sheet-handle span{font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:#999;}
+    position:sticky;top:0;z-index:2;background:var(--panel);padding:9px 0 8px;cursor:pointer;
+    border-bottom:1px solid var(--bsub);border-radius:16px 16px 0 0;}
+  .sheet-grip{width:38px;height:4px;border-radius:3px;background:#3a382f;}
+  .sheet-handle span{font-family:'Geist Mono',monospace;font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--mut);}
   body.sheet-open .sheet-handle span::after{content:' \25BE';}
   .sheet-handle span::after{content:' \25B4';}
   /* Scrim behind an open sheet */
   body.sheet-open .sheet-scrim{display:block;position:fixed;inset:0;z-index:249;
     background:rgba(6,6,6,0.45);}
   /* Bigger touch targets + no iOS focus-zoom (needs >=16px font on form controls) */
-  select,input[type=text]{font-size:16px;padding:9px 10px;}
+  select,input[type=text]{font-size:16px;padding:11px 12px;}
   .tog{width:42px;height:24px;border-radius:13px;}
   .tog::after{width:18px;height:18px;top:3px;left:3px;}
-  .tog.on::after{left:21px;}
-  .tog-row{margin-bottom:11px;}
-  .tog-label,.ctrl label{font-size:0.8rem;}
-  .mbtn{padding:10px 4px;font-size:0.78rem;}
-  .chip{font-size:0.78rem;padding:5px 11px;}
-  .btn{padding:11px;font-size:0.74rem;}
+  .tog.on::after{transform:translateX(18px);}
+  .tog-row{padding:9px 0;}
+  .tog-label,.ctrl label{font-size:0.85rem;}
+  .mbtn{padding:11px 4px;font-size:0.82rem;}
+  .chip{font-size:0.82rem;padding:7px 13px;}
+  .btn{padding:13px;font-size:0.8rem;}
   .icon-cell{font-size:1.35rem;padding:6px 2px;}
-  input[type=range]{height:4px;}
-  input[type=range]::-webkit-slider-thumb{width:18px;height:18px;}
-  .section{padding:14px 16px;}
-  /* Tighter header */
-  header{padding:10px 14px;}
-  header h1{font-size:1.1rem;}
-  header span{display:none;}
-  #exportCount + div{display:none;}
+  input[type=range]{height:5px;}
+  input[type=range]::-webkit-slider-thumb{width:20px;height:20px;}
+  .section > .slabel{padding:16px;}
+  .section > *:not(.slabel){padding-left:16px;padding-right:16px;}
+  /* Tighter top bar */
+  header{padding:0 12px;gap:10px;}
+  header h1{font-size:1.05rem;}
+  .brand-tag,.export-count,.file-chip,.help-dot{display:none;}
+  /* Lift the stage chrome above the collapsed bottom sheet */
+  .float-toolbar{bottom:72px;gap:2px;padding:5px;}
+  .tool-btn{padding:9px 11px;}
+  .tool-btn span{display:none;}
+  .gen-fab{top:12px;right:12px;padding:9px 12px;}
+  .gen-grid{flex-direction:column;align-items:center;overflow-y:auto;max-height:100%;}
+  .gen-card{width:min(86vw,320px);}
+  .gen-card .gc-thumb{aspect-ratio:1.4/1;}
 }
 </style>
 </head>
 <body>
 <header>
-  <h1>RouteArt</h1>
-  <span>GPX Poster Studio</span>
-  <div style="flex:1"></div>
-  <div style="display:flex;gap:14px;align-items:center">
-    <div id="helpBtn" onclick="startTour()" title="Show a quick guided tour"
-         style="width:24px;height:24px;border-radius:50%;border:1px solid #2a2a2a;color:#999;
-                display:flex;align-items:center;justify-content:center;cursor:pointer;
-                font-size:0.8rem;transition:all .15s;flex-shrink:0"
-         onmouseover="this.style.borderColor='#c8b89a';this.style.color='#c8b89a'"
-         onmouseout="this.style.borderColor='#2a2a2a';this.style.color='#999'">?</div>
-    <div style="text-align:right;line-height:1.3">
-      <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:#c8b89a;letter-spacing:0.5px" id="exportCount">—</div>
-      <div style="font-size:0.46rem;color:#888;letter-spacing:2px;text-transform:uppercase">Posters exported</div>
+  <div class="brand">
+    <div class="brand-mark">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 19c4-1 3-7 7-7s3 5 9-1" stroke="#17150f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4" cy="19" r="2" fill="#17150f"/><circle cx="20" cy="11" r="2" fill="#17150f"/></svg>
     </div>
-    <a href="https://ko-fi.com/ehrenholm" target="_blank" id="kofiBtn"
-       style="background:#c8b89a;color:#0e0e0e;padding:5px 12px;border-radius:20px;
-              font-family:'DM Mono',monospace;font-size:0.58rem;font-weight:500;
-              text-decoration:none;letter-spacing:0.5px;transition:background .2s;white-space:nowrap"
-       onmouseover="this.style.background='#ddd0bb'" onmouseout="this.style.background='#c8b89a'">
-      ☕ Support
-    </a>
+    <h1>RouteArt</h1>
+    <span class="brand-tag">Poster Studio</span>
+  </div>
+
+  <div style="flex:1;display:flex;justify-content:center;">
+    <div class="file-chip" id="fileChip" style="display:none">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M14 3v4a1 1 0 001 1h4" stroke="var(--accent)" stroke-width="1.6"/><path d="M5 3h9l5 5v11a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" stroke="var(--accent)" stroke-width="1.6"/></svg>
+      <span class="fc-name" id="fcName">route.gpx</span>
+      <span class="fc-div"></span>
+      <button class="fc-replace">Replace<input type="file" id="fileInputTop" accept=".gpx"></button>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div class="help-dot" id="helpBtn" onclick="startTour()" title="Show a quick guided tour">?</div>
+    <div class="export-count" style="text-align:right;line-height:1.25;">
+      <div class="ec-num" id="exportCount">—</div>
+      <div class="ec-lbl">Posters exported</div>
+    </div>
+    <div style="position:relative;">
+      <button class="export-btn" onclick="toggleExportMenu()">
+        Export
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8l3.5-3.5" stroke="#17150f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="export-menu" id="exportMenu">
+        <button class="export-row" id="btnExport" onclick="exportPNG();toggleExportMenu(false)" disabled>
+          <span>PNG poster</span><span>high-res</span>
+        </button>
+        <button class="export-row" id="btnSVG" onclick="exportSVG();toggleExportMenu(false)" disabled>
+          <span>SVG vector</span><span>editable</span>
+        </button>
+        <button class="export-row" id="btnVideoExport" onclick="exportVideoFromMenu();toggleExportMenu(false)" disabled>
+          <span>Video reel</span><span>9:16 mp4</span>
+        </button>
+      </div>
+    </div>
+    <a href="https://ko-fi.com/ehrenholm" target="_blank" id="kofiBtn" class="support-pill">☕ Support</a>
   </div>
 </header>
 <div class="workspace">
@@ -213,7 +334,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
   <div class="sheet-handle" onclick="toggleSheet()"><div class="sheet-grip"></div><span>Controls</span></div>
 
   <div class="section">
-    <div class="slabel">GPX File</div>
+    <div class="slabel">Source</div>
     <div class="upload-zone" id="dropZone">
       <input type="file" id="fileInput" accept=".gpx">
       <div class="uico">&#128205;</div>
@@ -223,36 +344,127 @@ canvas#overlay{position:absolute;top:0;left:0;}
   </div>
 
   <div class="section" id="statsSection" style="display:none">
-    <div class="slabel">Route Info</div>
+    <div class="slabel">Route</div>
     <div class="stats-grid">
       <div class="stat-box"><div class="stat-val" id="sLaps">-</div><div class="stat-key">Laps</div></div>
-      <div class="stat-box"><div class="stat-val" id="sDist">-</div><div class="stat-key">Dist</div></div>
+      <div class="stat-box"><div class="stat-val" id="sDist">-</div><div class="stat-key">Distance</div></div>
       <div class="stat-box"><div class="stat-val" id="sRaw">-</div><div class="stat-key">Raw pts</div></div>
       <div class="stat-box"><div class="stat-val" id="sProc">-</div><div class="stat-key">Final pts</div></div>
     </div>
     <div class="lap-chips" id="lapChips"></div>
+    <div class="trim-info" id="trimInfo"></div>
+    <button class="btn warn" id="btnClearEdits" onclick="clearEdits()" style="display:none">Clear edits</button>
   </div>
 
   <div class="section" id="factsSection" style="display:none">
-    <div class="slabel">Track Facts</div>
+    <div class="slabel">Track facts</div>
     <div class="facts-grid" id="factsGrid"></div>
-    <div style="margin-top:8px">
-      <div class="slabel" style="margin-bottom:5px">Add graph to poster</div>
-      <select id="graphType" style="margin-bottom:5px">
-        <option value="elevation">Elevation profile</option>
-        <option value="speed">Speed profile</option>
-        <option value="grade">Grade / steepness</option>
+    <div style="margin-top:14px">
+      <label style="display:block;font-size:11.5px;color:var(--lbl);margin-bottom:8px">Add graph to poster</label>
+      <div class="add-row">
+        <select id="graphType">
+          <option value="elevation">Elevation profile</option>
+          <option value="speed">Speed profile</option>
+          <option value="grade">Grade / steepness</option>
+        </select>
+        <button class="add-btn" onclick="addGraphElement()" title="Add graph">+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="timelineSection" style="display:none">
+    <div class="slabel">Timeline</div>
+    <div style="font-size:11.5px;color:var(--mut2);margin-bottom:10px">Drag handles to trim track by time/position.</div>
+    <div style="position:relative;height:44px;margin-bottom:4px" id="timelineWrap">
+      <canvas id="timelineCanvas" style="width:100%;height:32px;border-radius:8px;cursor:crosshair;display:block"></canvas>
+      <div style="display:flex;justify-content:space-between;font-family:'Geist Mono',monospace;font-size:10px;color:var(--faint2);margin-top:4px">
+        <span id="tlStartLabel">0%</span>
+        <span id="tlEndLabel">100%</span>
+      </div>
+    </div>
+    <button class="btn warn" id="btnClearTimeline" onclick="clearTimeline()" style="display:none;margin-top:6px">Reset timeline</button>
+  </div>
+
+  <div class="section">
+    <div class="slabel">Style</div>
+    <div class="ctrl"><label>Theme</label>
+      <select id="selTheme" onchange="render()">
+        <option value="dark">Charcoal &#8212; dark</option>
+        <option value="light">Cream paper &#8212; light</option>
+        <option value="forest">Forest &#8212; deep green</option>
+        <option value="neon">Midnight &#8212; neon</option>
+        <option value="blueprint">Blueprint &#8212; technical</option>
       </select>
-      <button class="btn sec" onclick="addGraphElement()">+ Add Graph</button>
+    </div>
+    <div class="ctrl">
+      <label>Track colour</label>
+      <select id="selColorMode" onchange="onColorModeChange()">
+        <option value="solid">Solid &#8212; theme colour</option>
+        <option value="speed">Gradient by speed</option>
+        <option value="elevation">Gradient by elevation</option>
+      </select>
+    </div>
+    <div id="colorRampCtrl" style="display:none">
+      <div class="ctrl"><label>Colour ramp</label>
+        <select id="selColorRamp" onchange="render()">
+          <option value="heat">Heat &#8212; blue&#8594;red</option>
+          <option value="cool">Cool &#8212; cyan&#8594;purple</option>
+          <option value="green">Viridis &#8212; green&#8594;yellow</option>
+          <option value="mono">Mono &#8212; dark&#8594;bright</option>
+          <option value="terrain">Terrain &#8212; green&#8594;white</option>
+        </select>
+      </div>
+      <div class="tog-row"><span class="tog-label">Show colour legend</span><div class="tog on" id="togLegend" onclick="this.classList.toggle('on');render()"></div></div>
+    </div>
+    <div class="ctrl"><label>Line weight <span id="vWt">2.5</span></label><input type="range" id="slWt" min="2" max="40" value="10"></div>
+    <div class="ctrl"><label>Glow <span id="vGl">0.40</span></label><input type="range" id="slGl" min="0" max="20" value="8"></div>
+    <div class="ctrl"><label>Padding <span id="vPad">12</span>%</label><input type="range" id="slPad" min="5" max="35" value="12"></div>
+    <label style="display:block;font-size:11.5px;color:var(--lbl);margin-bottom:8px">Format</label>
+    <select id="selFmt" onchange="render()" style="display:none">
+      <option value="portrait">Portrait A3</option>
+      <option value="square">Square</option>
+      <option value="landscape">Landscape A3</option>
+      <option value="reel">Reel 9:16 (video)</option>
+    </select>
+    <div id="fmtGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+      <div class="fmt-cell" data-fmt="portrait" onclick="pickFmt('portrait')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 6px;border:1px solid var(--accent);background:#1a1609;border-radius:9px;cursor:pointer;user-select:none;">
+        <span style="display:block;width:14px;height:20px;border:1.5px solid currentColor;border-radius:2px;color:var(--accent);"></span>
+        <span style="font-size:10.5px;color:var(--accent);">Portrait</span>
+      </div>
+      <div class="fmt-cell" data-fmt="square" onclick="pickFmt('square')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 6px;border:1px solid var(--bctrl);background:transparent;border-radius:9px;cursor:pointer;user-select:none;">
+        <span style="display:block;width:18px;height:18px;border:1.5px solid currentColor;border-radius:2px;color:var(--mut2);"></span>
+        <span style="font-size:10.5px;color:var(--mut2);">Square</span>
+      </div>
+      <div class="fmt-cell" data-fmt="landscape" onclick="pickFmt('landscape')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 6px;border:1px solid var(--bctrl);background:transparent;border-radius:9px;cursor:pointer;user-select:none;">
+        <span style="display:block;width:22px;height:15px;border:1.5px solid currentColor;border-radius:2px;color:var(--mut2);"></span>
+        <span style="font-size:10.5px;color:var(--mut2);">Landscape</span>
+      </div>
+      <div class="fmt-cell" data-fmt="reel" onclick="pickFmt('reel')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 6px;border:1px solid var(--bctrl);background:transparent;border-radius:9px;cursor:pointer;user-select:none;">
+        <span style="display:block;width:12px;height:21px;border:1.5px solid currentColor;border-radius:2px;color:var(--mut2);"></span>
+        <span style="font-size:10.5px;color:var(--mut2);">Reel 9:16</span>
+      </div>
     </div>
   </div>
 
   <div class="section">
-    <div class="slabel">Layer Visibility</div>
+    <div class="slabel">Processing</div>
+    <div class="ctrl"><label>Outlier filter <span id="vOut">3.0</span>x</label><input type="range" id="slOut" min="5" max="200" value="30"></div>
+    <div class="ctrl"><label>Smoothing <span id="vSm">0</span></label><input type="range" id="slSm" min="0" max="120" value="0"></div>
+    <div class="tog-row">
+      <span class="tog-label">Vectorize (simplify)</span>
+      <div class="tog" id="togVec" onclick="this.classList.toggle('on');gp('vecCtrl').style.display=this.classList.contains('on')?'block':'none';render()"></div>
+    </div>
+    <div id="vecCtrl" style="display:none">
+      <div class="ctrl" style="margin-top:14px;margin-bottom:0"><label>Tolerance <span id="vVec">1.0</span></label><input type="range" id="slVec" min="1" max="60" value="5"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="slabel">Layers</div>
     <div class="tog-row"><span class="tog-label">Map background</span><div class="tog" id="togMap" onclick="layerVis.mapBg=!layerVis.mapBg;this.classList.toggle('on',layerVis.mapBg);onMapToggle()"></div></div>
     <div id="mapControls" style="display:none;margin-bottom:8px">
       <div class="ctrl" style="margin-bottom:6px">
-        <label style="margin-bottom:3px;display:block">Map style</label>
+        <label style="margin-bottom:8px;display:block">Map style</label>
         <select id="selMapStyle" onchange="onMapStyleChange()">
           <option value="osm">OpenStreetMap (standard)</option>
           <option value="voyager">CartoDB Voyager (colourful)</option>
@@ -291,93 +503,8 @@ canvas#overlay{position:absolute;top:0;left:0;}
   </div>
 
   <div class="section">
-    <div class="slabel">Editing Mode</div>
-    <div class="mode-btns">
-      <div class="mbtn on" id="mView" onclick="setMode('view')">View</div>
-      <div class="mbtn" id="mTrim" onclick="setMode('trim')">&#9986; Trim</div>
-      <div class="mbtn" id="mExcl" onclick="setMode('exclude')">&#8856; Excl</div>
-      <div class="mbtn" id="mArt" onclick="setMode('art')">&#10022; Art</div>
-    </div>
-    <div class="hint" id="hTrim">Click route: set <span style="color:#4ade80">start</span>, click again: set <span style="color:#f87171">end</span>.</div>
-    <div class="hint" id="hExcl">Drag a box. Only points inside are removed; route reconnects around gap.</div>
-    <div class="hint" id="hArt">Drag elements. Right-click to edit/delete.</div>
-    <div class="trim-info" id="trimInfo"></div>
-    <button class="btn warn" id="btnClearEdits" onclick="clearEdits()" style="display:none">Clear edits</button>
-  </div>
-
-  <div class="section" id="timelineSection" style="display:none">
-    <div class="slabel">Timeline Trim</div>
-    <div style="font-size:0.54rem;color:#888;margin-bottom:8px">Drag handles to trim track by time/position.</div>
-    <div style="position:relative;height:44px;margin-bottom:4px" id="timelineWrap">
-      <canvas id="timelineCanvas" style="width:100%;height:32px;border-radius:3px;cursor:crosshair;display:block"></canvas>
-      <div style="display:flex;justify-content:space-between;font-size:0.5rem;color:#555;margin-top:2px">
-        <span id="tlStartLabel">0%</span>
-        <span id="tlEndLabel">100%</span>
-      </div>
-    </div>
-    <button class="btn warn" id="btnClearTimeline" onclick="clearTimeline()" style="display:none;margin-top:2px">Reset timeline</button>
-  </div>
-
-  <div class="section">
-    <div class="slabel">Processing</div>
-    <div class="ctrl"><label>Outlier filter <span id="vOut">3.0</span>x</label><input type="range" id="slOut" min="5" max="200" value="30"></div>
-    <div class="ctrl"><label>Smoothing <span id="vSm">0</span></label><input type="range" id="slSm" min="0" max="120" value="0"></div>
-
-    <div class="tog-row">
-      <span class="tog-label">Vectorize (simplify)</span>
-      <div class="tog" id="togVec" onclick="this.classList.toggle('on');gp('vecCtrl').style.display=this.classList.contains('on')?'block':'none';render()"></div>
-    </div>
-    <div id="vecCtrl" style="display:none">
-      <div class="ctrl"><label>Tolerance <span id="vVec">1.0</span></label><input type="range" id="slVec" min="1" max="60" value="5"></div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="slabel">Style</div>
-    <div class="ctrl" style="margin-bottom:7px"><label style="margin-bottom:3px;display:block">Theme</label>
-      <select id="selTheme" onchange="render()">
-        <option value="dark">Dark &#8212; charcoal</option>
-        <option value="light">Light &#8212; cream paper</option>
-        <option value="forest">Forest &#8212; deep green</option>
-        <option value="neon">Neon &#8212; midnight run</option>
-        <option value="blueprint">Blueprint &#8212; technical</option>
-      </select>
-    </div>
-    <div class="ctrl" style="margin-bottom:7px">
-      <label style="margin-bottom:3px;display:block">Track colour mode</label>
-      <select id="selColorMode" onchange="onColorModeChange()">
-        <option value="solid">Solid (theme colour)</option>
-        <option value="speed">Gradient by speed</option>
-        <option value="elevation">Gradient by elevation</option>
-      </select>
-    </div>
-    <div id="colorRampCtrl" style="display:none;margin-bottom:9px">
-      <label style="font-size:0.57rem;color:#aaa;display:block;margin-bottom:4px">Colour ramp</label>
-      <select id="selColorRamp" onchange="render()">
-        <option value="heat">Heat (blue→yellow→red)</option>
-        <option value="cool">Cool (cyan→blue→purple)</option>
-        <option value="green">Viridis (green→teal→yellow)</option>
-        <option value="mono">Mono (dark→bright)</option>
-        <option value="terrain">Terrain (green→brown→white)</option>
-      </select>
-      <div class="tog-row" style="margin-top:8px"><span class="tog-label">Show colour legend</span><div class="tog on" id="togLegend" onclick="this.classList.toggle('on');render()"></div></div>
-    </div>
-    <div class="ctrl"><label>Line weight <span id="vWt">2.5</span></label><input type="range" id="slWt" min="2" max="40" value="10"></div>
-    <div class="ctrl"><label>Glow <span id="vGl">0.40</span></label><input type="range" id="slGl" min="0" max="20" value="8"></div>
-    <div class="ctrl"><label>Padding <span id="vPad">12</span>%</label><input type="range" id="slPad" min="5" max="35" value="12"></div>
-    <div class="ctrl" style="margin-bottom:0"><label style="margin-bottom:3px;display:block">Format</label>
-      <select id="selFmt" onchange="render()">
-        <option value="portrait">Portrait A3</option>
-        <option value="square">Square</option>
-        <option value="landscape">Landscape A3</option>
-        <option value="reel">Reel 9:16 (video)</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="slabel">Add Elements</div>
-    <div class="ctrl" style="margin-bottom:5px"><label style="margin-bottom:3px;display:block">Type</label>
+    <div class="slabel">Elements</div>
+    <div class="add-row">
       <select id="artType" onchange="onArtTypeChange()">
         <option value="title">Title text</option>
         <option value="subtitle">Subtitle</option>
@@ -388,33 +515,33 @@ canvas#overlay{position:absolute;top:0;left:0;}
         <option value="image">Image / photo</option>
         <option value="line">Line / arrow pointer</option>
       </select>
-      <div class="ctrl" style="margin-bottom:5px;margin-top:5px">
-        <label style="margin-bottom:3px;display:block">Layer</label>
-        <select id="artLayerSel">
-          <option value="foreground">Foreground (above route)</option>
-          <option value="middle">Middle (above route)</option>
-          <option value="background">Background (below route)</option>
-        </select>
-      </div>
+      <button class="add-btn" onclick="addArtElement()" title="Add to canvas">+</button>
+    </div>
+    <div class="ctrl" style="margin-top:11px;margin-bottom:0">
+      <label>Layer</label>
+      <select id="artLayerSel">
+        <option value="foreground">Foreground (above route)</option>
+        <option value="middle">Middle (above route)</option>
+        <option value="background">Background (below route)</option>
+      </select>
     </div>
     <div id="iconPickerWrap" style="display:none">
-      <div class="slabel" style="margin-top:3px">Choose icon</div>
+      <label style="display:block;font-size:11.5px;color:var(--lbl);margin-top:11px">Choose icon</label>
       <div class="icon-grid" id="iconGrid"></div>
     </div>
-    <div id="imgPickerWrap" style="display:none;margin-top:5px">
-      <div class="slabel">Import image</div>
-      <label style="display:block;padding:10px;background:#111;border:1px dashed #2a2a2a;border-radius:3px;text-align:center;cursor:pointer;font-size:0.57rem;color:#888">
+    <div id="imgPickerWrap" style="display:none;margin-top:11px">
+      <label style="display:block;font-size:11.5px;color:var(--lbl);margin-bottom:8px">Import image</label>
+      <label style="display:block;padding:12px;background:var(--surface);border:1px dashed var(--bctrl);border-radius:9px;text-align:center;cursor:pointer;font-size:12px;color:var(--mut2)">
         <input type="file" id="imgFileInput" accept="image/*" style="display:none" onchange="onImgFileSelect(this)">
         &#128444; Click to pick image
       </label>
-      <div id="imgPreview" style="margin-top:5px;display:none"><img id="imgThumb" style="width:100%;border-radius:3px;opacity:0.7"></div>
+      <div id="imgPreview" style="margin-top:8px;display:none"><img id="imgThumb" style="width:100%;border-radius:9px;opacity:0.7"></div>
     </div>
-    <button class="btn sec" style="margin-top:5px" onclick="addArtElement()">+ Add to canvas</button>
     <div class="art-list" id="artList"></div>
   </div>
 
   <div class="section" id="animSection" style="display:none">
-    <div class="slabel">&#127916; Animate route</div>
+    <div class="slabel">Animate</div>
     <div class="ctrl">
       <label>Style</label>
       <select id="animStyle" onchange="if(animPrepared)prepAnim();drawAnimStill();">
@@ -452,10 +579,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
     <div class="hint" id="animHint" style="display:block">Tip: pick <strong style="color:#c8b89a">Reel 9:16</strong> format for Instagram Reels/Stories. Recording captures the full play-through to a video file.</div>
   </div>
 
-  <div class="section">
-    <button class="btn" id="btnExport" onclick="exportPNG()" disabled>Export PNG</button>
-    <button class="btn sec" id="btnSVG" onclick="exportSVG()" disabled>Export SVG</button>
-  </div>
+  <div style="height:18px"></div>
 </div>
 
 <div class="canvas-area" id="canvasArea">
@@ -464,11 +588,47 @@ canvas#overlay{position:absolute;top:0;left:0;}
     <canvas id="poster"></canvas>
     <canvas id="overlay"></canvas>
   </div>
+
+  <!-- AI-style suggestions launcher (shown once a GPX is loaded) -->
+  <button class="gen-fab" id="genFab" onclick="openStyleProposals()" title="Auto-generate 3 styled versions of this route">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.2 5.8L20 9l-4.5 3.8L17 19l-5-3.4L7 19l1.5-6.2L4 9l5.8-.2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    Suggest styles
+  </button>
+
+  <!-- hint chip -->
+  <div class="hint-chip" id="hintChip"></div>
+
+  <!-- floating toolbar -->
+  <div class="float-toolbar" id="floatToolbar" style="display:none">
+    <div class="tool-btn on" id="mView" onclick="setMode('view')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.7"/></svg>
+      <span>View</span>
+    </div>
+    <div class="tool-btn" id="mTrim" onclick="setMode('trim')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="3" stroke="currentColor" stroke-width="1.7"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M8.5 7.5L20 18M8.5 16.5L20 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <span>Trim</span>
+    </div>
+    <div class="tool-btn" id="mExcl" onclick="setMode('exclude')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M5.6 5.6l12.8 12.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <span>Exclude</span>
+    </div>
+    <div class="tool-btn" id="mArt" onclick="setMode('art')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.2 5.8L20 9l-4.5 3.8L17 19l-5-3.4L7 19l1.5-6.2L4 9l5.8-.2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      <span>Art</span>
+    </div>
+    <span class="tool-div"></span>
+    <div class="zoom-group">
+      <span class="zoom-btn" onclick="zoomBy(-1)">&minus;</span>
+      <span class="zoom-val" id="zoomVal">100%</span>
+      <span class="zoom-btn" onclick="zoomBy(1)">+</span>
+    </div>
+  </div>
+
   <div class="statusbar" id="statusbar"></div>
   <div id="mapAttrib" style="display:none;position:absolute;bottom:8px;right:8px;
-       font-size:0.48rem;color:#333;letter-spacing:0.5px;">
+       font-family:'Geist Mono',monospace;font-size:0.48rem;color:#4c483e;letter-spacing:0.5px;">
     Map © <a href="https://www.openstreetmap.org/copyright" target="_blank"
-             style="color:#444;text-decoration:none">OpenStreetMap</a> contributors
+             style="color:#5c574c;text-decoration:none">OpenStreetMap</a> contributors
   </div>
 </div>
 
@@ -477,6 +637,16 @@ canvas#overlay{position:absolute;top:0;left:0;}
   <div class="ctx-item" onclick="ctxDuplicate()">&#10063; Duplicate</div>
   <div class="ctx-item" onclick="ctxDelete()" style="color:#c06060">&#10005; Delete</div>
 </div>
+</div>
+
+<!-- Style proposals overlay: 3 auto-generated looks, click to adopt -->
+<div class="gen-overlay" id="genOverlay">
+  <span class="gen-close" onclick="closeStyleProposals()">&times;</span>
+  <div class="gen-head">
+    <h2>Three looks for your route</h2>
+    <p id="genSub">Picked from your track's shape and data. Click one to keep editing it.</p>
+  </div>
+  <div class="gen-grid" id="genGrid"></div>
 </div>
 
 <div class="modal-bg" id="donateModal" onclick="if(event.target===this)this.classList.remove('show')">
@@ -1461,6 +1631,10 @@ function render(){
   var area=gp('canvasArea'),maxW=area.clientWidth-40,maxH=area.clientHeight-40;
   var ar=W/H,dW,dH;
   if(ar>maxW/maxH){dW=maxW;dH=maxW/ar;}else{dH=maxH;dW=maxH*ar;}
+  // Manual zoom (floating-toolbar −/+); 1 = fit-to-stage. Display only —
+  // posterScale derives from the zoomed dW, so overlay hit-testing stays aligned.
+  dW*=posterZoom;dH*=posterZoom;
+  if(gp('zoomVal'))gp('zoomVal').textContent=Math.round(posterZoom*100)+'%';
   C.style.width=dW+'px';C.style.height=dH+'px';
   OV.width=dW;OV.height=dH;OV.style.width=dW+'px';OV.style.height=dH+'px';
   posterScale=dW/W;
@@ -1584,14 +1758,22 @@ function drawOverlay(tempBox){
 function normBox(a,b){return{x:Math.min(a.x,b.x),y:Math.min(a.y,b.y),w:Math.abs(b.x-a.x),h:Math.abs(b.y-a.y)};}
 
 // INTERACTION
+var MODE_HINTS={
+  view:'Pan &amp; inspect — drag to move the poster',
+  trim:'Click the route to set start, click again to set end',
+  exclude:'Drag a box to remove a section — route reconnects',
+  art:'Drag elements to place them · right-click to edit'
+};
 function setMode(m){
   mode=m;trimStep=0;dragExclude=null;dragArt=-1;
   ['mView','mTrim','mExcl','mArt'].forEach(function(id){var el=gp(id);if(el)el.classList.remove('on');});
   var map={view:'mView',trim:'mTrim',exclude:'mExcl',art:'mArt'};
-  if(map[m])gp(map[m]).classList.add('on');
-  gp('hTrim').style.display=m==='trim'?'block':'none';
-  gp('hExcl').style.display=m==='exclude'?'block':'none';
-  gp('hArt').style.display=m==='art'?'block':'none';
+  if(map[m]&&gp(map[m]))gp(map[m]).classList.add('on');
+  // Hint chip (top-centre of stage) replaces the old per-mode panel hints.
+  // Only shown for the active editing tools, so it doesn't crowd the
+  // "Suggest styles" button while you're just viewing.
+  var hc=gp('hintChip');
+  if(hc){hc.innerHTML=MODE_HINTS[m]||'';hc.classList.toggle('show',rawPts.length>0&&m!=='view');}
   OV.style.cursor=m==='view'?'default':m==='art'?'grab':'crosshair';
   drawOverlay(null);
 }
@@ -2083,25 +2265,41 @@ function loadFile(f){
     lapGroups=[];activeLaps.clear();trimStart=0;trimEnd=1e9;excludes=[];artElements=[];selectedArt=-1;
     clearTileCache();
     trackFacts=calcFacts(rawPts,rawEle,rawTime);renderFacts(trackFacts);
-    gp('fileOk').style.display='block';gp('fileOk').textContent='OK '+f.name+' ('+rawPts.length+' pts)';
+    // Loaded-file card (Source section) + top-bar file chip
+    var fok=gp('fileOk');
+    fok.classList.add('show');
+    fok.innerHTML='<div class="fo-tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 19c4-1 3-7 7-7s3 5 9-1" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+      +'<div class="fo-meta"><div class="fo-name"></div><div class="fo-sub"></div></div>'
+      +'<div class="fo-dot"></div>';
+    fok.querySelector('.fo-name').textContent=f.name;
+    fok.querySelector('.fo-sub').textContent=rawPts.length.toLocaleString()+' points · loaded';
+    if(gp('dropZone'))gp('dropZone').style.display='none';
+    if(gp('fileChip')){gp('fileChip').style.display='flex';gp('fcName').textContent=f.name;}
     gp('statsSection').style.display='block';gp('emptyState').style.display='none';
-    gp('posterWrap').style.display='block';gp('btnExport').disabled=false;gp('btnSVG').disabled=false;
+    gp('posterWrap').style.display='block';
+    gp('btnExport').disabled=false;gp('btnSVG').disabled=false;
+    if(gp('btnVideoExport'))gp('btnVideoExport').disabled=false;
+    if(gp('floatToolbar'))gp('floatToolbar').style.display='flex';
+    if(gp('genFab'))gp('genFab').classList.add('show');
     gp('animSection').style.display='block';exitAnim(true);
+    setMode('view');
     updateArtList();showTimeline();render();
     // On mobile, collapse the sheet after a load so the new poster is revealed.
     if(isMobile())toggleSheet(false);
   };rd.readAsText(f);
 }
 gp('fileInput').addEventListener('change',function(e){if(e.target.files[0])loadFile(e.target.files[0]);});
+// Top-bar "Replace" file picker mirrors the drop-zone input.
+if(gp('fileInputTop'))gp('fileInputTop').addEventListener('change',function(e){if(e.target.files[0])loadFile(e.target.files[0]);});
 var dz=gp('dropZone');
 dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('drag');});
 dz.addEventListener('dragleave',function(){dz.classList.remove('drag');});
 dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
 
 // COLLAPSIBLE SECTIONS — click a section header to fold it away.
-// On load everything starts collapsed except GPX File, for a tidy sidebar.
+// On load everything starts collapsed except Source & Style, for a tidy sidebar.
 (function(){
-  var KEEP_OPEN={'GPX File':1};
+  var KEEP_OPEN={'Source':1,'Style':1};
   Array.prototype.forEach.call(document.querySelectorAll('.panel > .section'),function(sec){
     var lab=sec.querySelector(':scope > .slabel');if(!lab)return;
     var name=lab.textContent.trim();
@@ -2145,6 +2343,144 @@ function exportSVG(){
   a.click();
   hitCounter();
   document.getElementById('donateModal').classList.add('show');
+}
+
+// ═══════════════════════════════════════════════════
+// TOP-BAR EXPORT MENU
+// ═══════════════════════════════════════════════════
+function toggleExportMenu(force){
+  var m=gp('exportMenu');if(!m)return;
+  var open=m.classList.contains('show');
+  m.classList.toggle('show',force===undefined?!open:!!force);
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.export-btn')&&!e.target.closest('#exportMenu'))toggleExportMenu(false);
+});
+// "Video reel" row → jump to the Animate panel and start recording the play-through.
+function exportVideoFromMenu(){
+  var sec=gp('animSection');if(!sec)return;
+  sec.classList.remove('collapsed');
+  if(isMobile())toggleSheet(true);
+  sec.scrollIntoView({block:'center'});
+  setTimeout(function(){recordOrSave();},220);
+}
+
+// ═══════════════════════════════════════════════════
+// FORMAT PICKER (2×2 tiles drive the hidden <select id="selFmt">)
+// ═══════════════════════════════════════════════════
+function syncFmtPicker(){
+  var f=gp('selFmt')?gp('selFmt').value:'portrait';
+  Array.prototype.forEach.call(document.querySelectorAll('#fmtGrid .fmt-cell'),function(c){
+    var sel=c.getAttribute('data-fmt')===f;
+    c.style.borderColor=sel?'var(--accent)':'var(--bctrl)';
+    c.style.background=sel?'#1a1609':'transparent';
+    Array.prototype.forEach.call(c.querySelectorAll('span'),function(s){s.style.color=sel?'var(--accent)':'var(--mut2)';});
+  });
+}
+function pickFmt(f){if(gp('selFmt'))gp('selFmt').value=f;syncFmtPicker();render();}
+
+// ═══════════════════════════════════════════════════
+// POSTER ZOOM (floating toolbar −/+) — display-only scale.
+// ═══════════════════════════════════════════════════
+var posterZoom=1;
+function zoomBy(dir){
+  posterZoom=Math.max(0.4,Math.min(3,posterZoom*(dir>0?1.15:1/1.15)));
+  if(rawPts.length)render();
+}
+
+// ═══════════════════════════════════════════════════
+// AUTO STYLE SUGGESTIONS
+// Analyse the loaded track and propose 3 distinct, good-looking
+// poster styles. Each is rendered to a thumbnail; clicking one
+// applies it to the live controls so the user can keep editing.
+// ═══════════════════════════════════════════════════
+function routeAspect(){
+  if(!rawPts.length)return 1;
+  var mnX=1e18,mxX=-1e18,mnY=1e18,mxY=-1e18;
+  for(var i=0;i<rawPts.length;i++){
+    var x=mercX(rawPts[i].lon),y=mercY(rawPts[i].lat);
+    if(x<mnX)mnX=x;if(x>mxX)mxX=x;if(y<mnY)mnY=y;if(y>mxY)mxY=y;
+  }
+  var w=mxX-mnX,h=mxY-mnY;
+  return h>1e-9?w/h:1;
+}
+function analyzeStyles(){
+  var a=routeAspect();
+  var baseFmt=a>1.25?'landscape':(a<0.82?'portrait':'square');
+  var hasEle=!!trackFacts.elevGain;
+  var hasSpd=!!(trackFacts.avgSpeed||trackFacts.topSpeed);
+  var list=[];
+  // 1 — clean minimal, fitted to the route's natural orientation
+  list.push({name:'Charcoal minimal',theme:'dark',colorMode:'solid',ramp:'mono',wt:9,gl:4,pad:15,fmt:baseFmt,
+    why:'A calm charcoal poster with a clean solid line — flatters almost any route shape.'});
+  // 2 — data-driven gradient (picks the channel you actually have data for)
+  if(hasEle){
+    list.push({name:'Elevation gradient',theme:'dark',colorMode:'elevation',ramp:'terrain',wt:13,gl:7,pad:13,fmt:baseFmt,
+      why:'Your track gains '+trackFacts.elevGain+' — colour the line by height to show the climbs.'});
+  }else if(hasSpd){
+    list.push({name:'Speed heatmap',theme:'dark',colorMode:'speed',ramp:'heat',wt:13,gl:8,pad:13,fmt:baseFmt,
+      why:'You logged speed data — the line runs hot where you were fastest'+(trackFacts.topSpeed?' ('+trackFacts.topSpeed+')':'')+'.'});
+  }else{
+    list.push({name:'Neon midnight',theme:'neon',colorMode:'solid',ramp:'cool',wt:12,gl:14,pad:14,fmt:baseFmt,
+      why:'No elevation or speed data here — so lean into a glowing neon line on midnight blue.'});
+  }
+  // 3 — editorial print look
+  list.push({name:'Cream editorial',theme:'light',colorMode:'solid',ramp:'mono',wt:15,gl:2,pad:18,fmt:'portrait',
+    why:'Gallery-style cream paper with a bold dark line — great printed as an A3 poster.'});
+  return list;
+}
+function snapshotStyle(){return {theme:gp('selTheme').value,colorMode:gp('selColorMode').value,ramp:gp('selColorRamp').value,wt:gp('slWt').value,gl:gp('slGl').value,pad:gp('slPad').value,fmt:gp('selFmt').value,zoom:posterZoom};}
+function applyStyle(p){
+  gp('selTheme').value=p.theme;gp('selColorMode').value=p.colorMode;gp('selColorRamp').value=p.ramp;
+  gp('slWt').value=p.wt;gp('slGl').value=p.gl;gp('slPad').value=p.pad;gp('selFmt').value=p.fmt;
+}
+function restoreStyle(s){applyStyle(s);posterZoom=s.zoom;}
+function updateStyleReadouts(){
+  if(gp('vWt'))gp('vWt').textContent=(+gp('slWt').value*0.25).toFixed(1);
+  if(gp('vGl'))gp('vGl').textContent=(+gp('slGl').value*0.05).toFixed(2);
+  if(gp('vPad'))gp('vPad').textContent=Math.round(+gp('slPad').value);
+}
+function makeThumb(maxBox){
+  var scale=Math.min(maxBox/C.width,maxBox/C.height);
+  var tc=document.createElement('canvas');
+  tc.width=Math.max(1,Math.round(C.width*scale));
+  tc.height=Math.max(1,Math.round(C.height*scale));
+  tc.getContext('2d').drawImage(C,0,0,tc.width,tc.height);
+  return tc.toDataURL('image/png');
+}
+var _stylePresets=[];
+function openStyleProposals(){
+  if(!rawPts.length)return;
+  _stylePresets=analyzeStyles();
+  var snap=snapshotStyle();
+  var savedZoom=posterZoom;posterZoom=1;   // render thumbs at fit scale
+  var grid=gp('genGrid');grid.innerHTML='';
+  // Render each preset to the live canvas, grab a downscaled thumbnail.
+  // All synchronous → the screen only repaints once we restore at the end.
+  _stylePresets.forEach(function(p,i){
+    applyStyle(p);render();
+    var thumb=makeThumb(720);
+    var card=document.createElement('div');
+    card.className='gen-card';
+    card.style.animationDelay=(i*0.06)+'s';
+    card.onclick=(function(idx){return function(){adoptStyle(idx);};})(i);
+    card.innerHTML='<div class="gc-thumb"><img alt="'+p.name+'" src="'+thumb+'"></div>'
+      +'<div class="gc-body"><div class="gc-name">'+p.name+'</div>'
+      +'<div class="gc-why">'+p.why+'</div>'
+      +'<div class="gc-pick">Use this style &rarr;</div></div>';
+    grid.appendChild(card);
+  });
+  posterZoom=savedZoom;restoreStyle(snap);render();
+  gp('genOverlay').classList.add('show');
+}
+function closeStyleProposals(){gp('genOverlay').classList.remove('show');}
+function adoptStyle(i){
+  var p=_stylePresets[i];if(!p)return;
+  applyStyle(p);
+  updateStyleReadouts();syncFmtPicker();
+  posterZoom=1;
+  onColorModeChange(); // toggles the ramp control + re-renders
+  closeStyleProposals();
 }
 
 // ═══════════════════════════════════════════════════
@@ -2500,8 +2836,9 @@ var TOUR_STEPS=[
   {get:function(){return gp('togMap').closest('.section');}, t:'Layers & map',     d:'Toggle each layer on/off, and switch on a real map background under your track — pick from OSM, satellite, topo, watercolour and more.'},
   {get:function(){return gp('selTheme').closest('.section');},t:'Style & colour',   d:'Choose a theme, colour the line by speed or elevation with a gradient, and set line weight, glow, padding and the poster format.'},
   {get:function(){return gp('artType').closest('.section');}, t:'Add elements',     d:'Layer on titles, stat blocks, icons, photos and pointer lines. Drag them around the poster in Art mode.'},
+  {get:function(){return gp('genFab');},                  t:'Instant suggestions',d:'Not sure where to start? Let RouteArt analyse your track and propose three finished looks — click one to keep editing it.'},
   {get:function(){return gp('animSection');},             t:'Animate & record',   d:'Bring the route to life — Draw, Comet, Cinematic, Spotlight and more — then record it straight to a video for Reels & Stories.'},
-  {get:function(){return gp('btnExport').closest('.section');},t:'Export',          d:'When it looks great, save a high-resolution PNG or a vector SVG.'}
+  {get:function(){return document.querySelector('.export-btn');},t:'Export',        d:'When it looks great, use Export ▾ for a high-resolution PNG, a vector SVG, or a 9:16 video reel.'}
 ];
 var tourI=0, tourActive=[];
 function startTour(){
