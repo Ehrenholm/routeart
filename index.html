@@ -1177,9 +1177,11 @@ function process(){
   var sel=lapGroups.filter(function(_,i){return activeLaps.has(i);});
   var useLaps=sel.length?sel:lapGroups;
   var working=[];useLaps.forEach(function(l){working=working.concat(l.pts);});
-  // Crop start/end by fraction of the route. Skipped while actively trimming so you
-  // see the whole track (and the S/E markers) — the cut takes effect back in View.
-  if(mode!=='trim'&&(trimStartFrac>0||trimEndFrac<1)&&working.length){
+  // Crop start/end by fraction of the route. Skipped only while the Crop sub-tool is
+  // active, so you can see the whole track to place the S/E markers. In every other
+  // mode (View, Exclude, Art, and the Finish-line sub-tool) the crop applies, so the
+  // route stays identical when you leave Trim.
+  if(!(mode==='trim'&&trimSub==='crop')&&(trimStartFrac>0||trimEndFrac<1)&&working.length){
     var tS=Math.floor(trimStartFrac*working.length);
     var tE=Math.ceil(trimEndFrac*working.length);
     working=working.slice(tS,Math.max(tS+1,tE));
@@ -1771,6 +1773,9 @@ function render(){
   if(layerVis.artFg)drawArtLayer('foreground',W,H,t);
   gp('statusbar').textContent=finalPts.length+' pts · '+p.fmt+' · '+p.theme+(p.pen?' · pen':'')+(p.vec?' · vec':'');
   drawOverlay(null);
+  // Keep the timeline (lap bands, sparkline) in sync whenever the laps change —
+  // e.g. after drawing a finish line or returning from Trim to View.
+  drawTimeline();
 }
 
 // OVERLAY
