@@ -409,6 +409,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
       <label>Track colour</label>
       <select id="selColorMode" onchange="onColorModeChange()">
         <option value="solid">Solid &#8212; theme colour</option>
+        <option value="lap">By lap &#8212; auto colours</option>
         <option value="speed">Gradient by speed</option>
         <option value="elevation">Gradient by elevation</option>
       </select>
@@ -482,6 +483,8 @@ canvas#overlay{position:absolute;top:0;left:0;}
           <option value="graylight">ESRI Light Gray (minimal)</option>
           <option value="graydark">ESRI Dark Gray (minimal)</option>
           <option value="topo">OpenTopoMap (topographic)</option>
+          <option value="cyclosm">CyclOSM (outdoor / trails)</option>
+          <option value="lmtopo">Lantm&#228;teriet Friluft &#9733; (SE, token)</option>
           <option value="esritopo">ESRI World Topo</option>
           <option value="natgeo">ESRI National Geographic</option>
           <option value="satellite">ESRI World Imagery (satellite)</option>
@@ -494,6 +497,11 @@ canvas#overlay{position:absolute;top:0;left:0;}
         <input type="text" id="inpStadiaKey" placeholder="paste your free key" oninput="onStadiaKeyInput(this.value)">
         <div style="font-size:0.5rem;color:#666;line-height:1.5;margin-top:3px">Stamen styles are served by <a href="https://stadiamaps.com/stamen/" target="_blank" style="color:#8a8">Stadia Maps</a> &#8212; sign up free and paste an API key. Stored locally in your browser.</div>
       </div>
+      <div class="ctrl" id="lmKeyCtrl" style="display:none;margin-bottom:6px">
+        <label style="margin-bottom:3px;display:block">Lantm&#228;teriet open-data token</label>
+        <input type="text" id="inpLmKey" placeholder="paste your open-data token" oninput="onLmKeyInput(this.value)">
+        <div style="font-size:0.5rem;color:#666;line-height:1.5;margin-top:3px">Swedish topographic / friluft map from <a href="https://apimanager.lantmateriet.se/" target="_blank" style="color:#8a8">Lantm&#228;teriet</a> open data (CC-BY). Register free, create a token for the &#8220;Topografisk webbkarta&#8221; service, and paste it. Stored locally in your browser.</div>
+      </div>
       <div class="ctrl">
         <label>Map opacity <span id="vMapOp">0.6</span></label>
         <input type="range" id="slMapOp" min="5" max="100" value="60">
@@ -502,7 +510,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
         <label>Extra padding <span id="vMapPad">20</span>%</label>
         <input type="range" id="slMapPad" min="0" max="60" value="20">
       </div>
-      <div style="font-size:0.5rem;color:#555;line-height:1.5">Tiles: OpenStreetMap / CartoDB / ESRI / Stadia&#183;Stamen.<br>Usage subject to their terms.</div>
+      <div style="font-size:0.5rem;color:#555;line-height:1.5">Tiles: OpenStreetMap / CartoDB / ESRI / Stadia&#183;Stamen / CyclOSM / Lantm&#228;teriet (CC-BY).<br>Usage subject to their terms.</div>
     </div>
     <div class="tog-row"><span class="tog-label">Background art</span><div class="tog on" id="togArtBg" onclick="layerVis.artBg=!layerVis.artBg;this.classList.toggle('on',layerVis.artBg);render()"></div></div>
     <div class="tog-row"><span class="tog-label">Base route</span><div class="tog on" id="togLayBase" onclick="layerVis.base=!layerVis.base;this.classList.toggle('on',layerVis.base);render()"></div></div>
@@ -793,6 +801,7 @@ var finishLine=null;                    // {a:{lat,lon},b:{lat,lon}} — manual 
 var detectStopsOn=false;                // optional: also split laps at long stops/pauses
 var excludes=[];
 var finalPts=[],projPts=[];
+var workingLapIdx=[],workingLapCount=0;  // per-point lap index of finalPts, for the "by lap" colour mode
 var trackFacts={};
 var artElements=[];
 var selectedArt=-1,ctxArt=-1;
@@ -1176,7 +1185,10 @@ function process(){
   gp('sLaps').textContent=lapGroups.length;
   var sel=lapGroups.filter(function(_,i){return activeLaps.has(i);});
   var useLaps=sel.length?sel:lapGroups;
-  var working=[];useLaps.forEach(function(l){working=working.concat(l.pts);});
+  // Track which lap each point belongs to (for the "by lap" colour mode), kept aligned
+  // with `working` through cropping.
+  var working=[];workingLapIdx=[];workingLapCount=useLaps.length;
+  useLaps.forEach(function(l,li){for(var z=0;z<l.pts.length;z++){working.push(l.pts[z]);workingLapIdx.push(li);}});
   // Crop start/end by fraction of the route. Skipped only while the Crop sub-tool is
   // active, so you can see the whole track to place the S/E markers. In every other
   // mode (View, Exclude, Art, and the Finish-line sub-tool) the crop applies, so the
@@ -1185,6 +1197,7 @@ function process(){
     var tS=Math.floor(trimStartFrac*working.length);
     var tE=Math.ceil(trimEndFrac*working.length);
     working=working.slice(tS,Math.max(tS+1,tE));
+    workingLapIdx=workingLapIdx.slice(tS,Math.max(tS+1,tE));
   }
   working=applyExcludes(working);
   if(p.sm>0)working=smooth(working,p.sm);
@@ -1401,7 +1414,8 @@ function drawColorLegend(W, H, mode, ramp, t) {
 
 function onColorModeChange() {
   var mode = gp('selColorMode').value;
-  gp('colorRampCtrl').style.display = mode === 'solid' ? 'none' : 'block';
+  // The ramp/legend controls only apply to the gradient modes, not solid or by-lap.
+  gp('colorRampCtrl').style.display = (mode === 'solid' || mode === 'lap') ? 'none' : 'block';
   render();
 }
 
@@ -1425,6 +1439,10 @@ var TILE_URLS = {
   graylight: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
   graydark:  'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
   topo:      'https://tile.opentopomap.org/{z}/{x}/{y}.png',
+  cyclosm:   'https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+  // Lantmäteriet "Topografisk webbkarta" (Swedish topo / friluft look), open CC-BY data.
+  // Uses the Web-Mercator (3857) matrix so it lines up with our projection; needs a free token.
+  lmtopo:    'https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/{lmkey}/1.0.0/topowebb_nedtonad/default/3857/{z}/{y}/{x}.png',
   esritopo:  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
   natgeo:    'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
   satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -1434,17 +1452,27 @@ var TILE_URLS = {
 };
 // Styles that require a Stadia Maps API key.
 var STADIA_STYLES = {watercolor:1, toner:1};
+// Styles that require a Lantmäteriet open-data token.
+var LM_STYLES = {lmtopo:1};
 // Max zoom each style reliably serves tiles at (others use the global default).
-var TILE_MAXZOOM = {natgeo:12, esritopo:16, graylight:16, graydark:16, topo:16, watercolor:16, toner:18, voyager:20};
+var TILE_MAXZOOM = {natgeo:12, esritopo:16, graylight:16, graydark:16, topo:16, cyclosm:18, lmtopo:14, watercolor:16, toner:18, voyager:20};
 function getStadiaKey(){ try { return localStorage.getItem('stadiaKey') || ''; } catch(e){ return ''; } }
+function getLmKey(){ try { return localStorage.getItem('lmKey') || ''; } catch(e){ return ''; } }
 function onMapStyleChange(){
-  var needsKey = !!STADIA_STYLES[gp('selMapStyle').value];
+  var style = gp('selMapStyle').value;
+  var needsKey = !!STADIA_STYLES[style], needsLm = !!LM_STYLES[style];
   gp('stadiaKeyCtrl').style.display = needsKey ? 'block' : 'none';
   if(needsKey) gp('inpStadiaKey').value = getStadiaKey();
+  var lmCtrl = gp('lmKeyCtrl');
+  if(lmCtrl){ lmCtrl.style.display = needsLm ? 'block' : 'none'; if(needsLm) gp('inpLmKey').value = getLmKey(); }
   clearTileCache(); render();
 }
 function onStadiaKeyInput(v){
   try { localStorage.setItem('stadiaKey', v.trim()); } catch(e){}
+  clearTileCache(); render();
+}
+function onLmKeyInput(v){
+  try { localStorage.setItem('lmKey', v.trim()); } catch(e){}
   clearTileCache(); render();
 }
 
@@ -1488,6 +1516,7 @@ function getTileUrl(style, z, x, y) {
   var tpl = TILE_URLS[style] || TILE_URLS.osm;
   var url = tpl.replace('{z}', z).replace('{x}', x).replace('{y}', y);
   if (url.indexOf('{key}') >= 0) url = url.replace('{key}', encodeURIComponent(getStadiaKey()));
+  if (url.indexOf('{lmkey}') >= 0) url = url.replace('{lmkey}', encodeURIComponent(getLmKey()));
   return url;
 }
 
@@ -1601,6 +1630,39 @@ function drawRoute(pts2d,color,wt,glowAmt,dashed){
   for(var i=1;i<pts2d.length-1;i++){var mx=(pts2d[i].x+pts2d[i+1].x)/2,my=(pts2d[i].y+pts2d[i+1].y)/2;ctx.quadraticCurveTo(pts2d[i].x,pts2d[i].y,mx,my);}
   ctx.lineTo(pts2d[pts2d.length-1].x,pts2d[pts2d.length-1].y);ctx.stroke();ctx.restore();
   var dr=wt*1.4;[pts2d[0],pts2d[pts2d.length-1]].forEach(function(pt){ctx.save();ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=dr*3;ctx.beginPath();ctx.arc(pt.x,pt.y,dr,0,Math.PI*2);ctx.fill();ctx.restore();});
+}
+
+// Distinct, vibrant colours cycled per lap (works on both dark and light themes).
+var LAP_PALETTE=['#4ade80','#60a5fa','#f472b6','#fbbf24','#a78bfa','#fb7185','#22d3ee','#f59e0b','#34d399','#c084fc'];
+// Draw the route as one continuous line, recoloured per lap. Each lap is a solid run
+// (not a luminance gradient), so adjacent laps stay visually distinct.
+function drawRouteByLap(pts2d,lapIdx,wt,glowAmt){
+  if(pts2d.length<2||!lapIdx)return;
+  // Group consecutive same-lap points into runs, sharing the boundary point so joins are seamless.
+  var runs=[{li:lapIdx[0],pts:[pts2d[0]]}];
+  for(var i=1;i<pts2d.length;i++){
+    runs[runs.length-1].pts.push(pts2d[i]);
+    if(i<pts2d.length-1&&lapIdx[i+1]!==runs[runs.length-1].li)runs.push({li:lapIdx[i+1],pts:[pts2d[i]]});
+  }
+  function stroke(run,glow){
+    var pp=run.pts;if(pp.length<2)return;
+    var col=LAP_PALETTE[run.li%LAP_PALETTE.length];
+    ctx.save();ctx.strokeStyle=col;ctx.lineJoin='round';ctx.lineCap='round';
+    if(glow){ctx.shadowColor=col;ctx.shadowBlur=wt*glowAmt*40;ctx.lineWidth=wt*1.8;ctx.globalAlpha=0.18;}
+    else ctx.lineWidth=wt;
+    ctx.beginPath();ctx.moveTo(pp[0].x,pp[0].y);
+    for(var j=1;j<pp.length-1;j++){var mx=(pp[j].x+pp[j+1].x)/2,my=(pp[j].y+pp[j+1].y)/2;ctx.quadraticCurveTo(pp[j].x,pp[j].y,mx,my);}
+    ctx.lineTo(pp[pp.length-1].x,pp[pp.length-1].y);ctx.stroke();ctx.restore();
+  }
+  if(glowAmt>0)runs.forEach(function(r){stroke(r,true);});
+  runs.forEach(function(r){stroke(r,false);});
+}
+// Resample the per-point lap index (length L) onto an n-length array by fraction along the route.
+function resampleLapIdx(srcIdx,n){
+  if(!srcIdx||srcIdx.length<1)return null;
+  var L=srcIdx.length,out=new Array(n);
+  for(var i=0;i<n;i++)out[i]=srcIdx[Math.min(L-1,Math.floor(i/n*L))];
+  return out;
 }
 
 // ART ELEMENT HELPERS
@@ -1745,7 +1807,12 @@ function render(){
   // Draw base route
   projPts=project(finalPts,W,H,p.pad);
   if(layerVis.base){
-    if(p.colorMode&&p.colorMode!=='solid'){
+    if(p.colorMode==='lap'){
+      // One colour per lap (auto palette). Falls back to a solid route for single-lap tracks.
+      var lapIdx=workingLapCount>1?resampleLapIdx(workingLapIdx,projPts.length):null;
+      if(lapIdx)drawRouteByLap(projPts,lapIdx,p.wt,p.glow);
+      else drawRoute(projPts,t.route,p.wt,p.glow,false);
+    } else if(p.colorMode&&p.colorMode!=='solid'){
       var pColors=buildPointColors(p.colorMode,p.colorRamp);
       if(pColors){
         // Downsample for gradient rendering — 2000 pts is plenty for visual quality
@@ -2509,6 +2576,15 @@ function exportSVG(){
   var p=getP(),t=TH[p.theme],wh=FMTS[p.fmt],W=wh[0],H=wh[1];
   var proj=project(finalPts,W,H,p.pad);
   var pathD='M '+proj.map(function(q){return q.x.toFixed(1)+','+q.y.toFixed(1);}).join(' L ');
+  // Route markup — one path per lap when colouring by lap, otherwise a single solid path.
+  var routeSVG;
+  if(p.colorMode==='lap'&&workingLapCount>1){
+    var lidx=resampleLapIdx(workingLapIdx,proj.length),segs=[{li:lidx[0],pts:[proj[0]]}];
+    for(var ri=1;ri<proj.length;ri++){segs[segs.length-1].pts.push(proj[ri]);if(ri<proj.length-1&&lidx[ri+1]!==segs[segs.length-1].li)segs.push({li:lidx[ri+1],pts:[proj[ri]]});}
+    routeSVG=segs.map(function(s){return'<path d="M '+s.pts.map(function(q){return q.x.toFixed(1)+','+q.y.toFixed(1);}).join(' L ')+'" stroke="'+LAP_PALETTE[s.li%LAP_PALETTE.length]+'" stroke-width="'+(p.wt*4).toFixed(1)+'" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';}).join('\n');
+  } else {
+    routeSVG='<path d="'+pathD+'" stroke="'+t.route+'" stroke-width="'+(p.wt*4).toFixed(1)+'" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
   var artSVG=artElements.map(function(el){
     if(el.type==='graph')return'<!-- graph: export PNG for full fidelity -->';
     var px=(el.x*W).toFixed(0),py=(el.y*H).toFixed(0);
@@ -2519,7 +2595,7 @@ function exportSVG(){
     return'<text x="'+px+'" y="'+py+'" text-anchor="'+anchor+'" fill="'+artCol(el.color||'primary',t)+'" font-size="'+(el.size||80)+'" font-family="'+(el.style==='mono'?'monospace':'serif')+'">'+el.text+'</text>';
   }).join('\n');
   var a=document.createElement('a');a.download='route-art.svg';
-  a.href='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'">\n<rect width="'+W+'" height="'+H+'" fill="'+t.bg1+'"/>\n<path d="'+pathD+'" stroke="'+t.route+'" stroke-width="'+(p.wt*4).toFixed(1)+'" fill="none" stroke-linecap="round" stroke-linejoin="round"/>\n'+artSVG+'\n</svg>');
+  a.href='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'">\n<rect width="'+W+'" height="'+H+'" fill="'+t.bg1+'"/>\n'+routeSVG+'\n'+artSVG+'\n</svg>');
   a.click();
   hitCounter();
   document.getElementById('donateModal').classList.add('show');
