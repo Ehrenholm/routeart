@@ -484,7 +484,6 @@ canvas#overlay{position:absolute;top:0;left:0;}
           <option value="graydark">ESRI Dark Gray (minimal)</option>
           <option value="topo">OpenTopoMap (topographic)</option>
           <option value="cyclosm">CyclOSM (outdoor / trails)</option>
-          <option value="lmtopo">Lantm&#228;teriet Friluft &#9733; (SE, token)</option>
           <option value="esritopo">ESRI World Topo</option>
           <option value="natgeo">ESRI National Geographic</option>
           <option value="satellite">ESRI World Imagery (satellite)</option>
@@ -497,11 +496,6 @@ canvas#overlay{position:absolute;top:0;left:0;}
         <input type="text" id="inpStadiaKey" placeholder="paste your free key" oninput="onStadiaKeyInput(this.value)">
         <div style="font-size:0.5rem;color:#666;line-height:1.5;margin-top:3px">Stamen styles are served by <a href="https://stadiamaps.com/stamen/" target="_blank" style="color:#8a8">Stadia Maps</a> &#8212; sign up free and paste an API key. Stored locally in your browser.</div>
       </div>
-      <div class="ctrl" id="lmKeyCtrl" style="display:none;margin-bottom:6px">
-        <label style="margin-bottom:3px;display:block">Lantm&#228;teriet open-data token</label>
-        <input type="text" id="inpLmKey" placeholder="paste your open-data token" oninput="onLmKeyInput(this.value)">
-        <div style="font-size:0.5rem;color:#666;line-height:1.5;margin-top:3px">Swedish topographic / friluft map from <a href="https://apimanager.lantmateriet.se/" target="_blank" style="color:#8a8">Lantm&#228;teriet</a> open data (CC-BY). Register free, create a token for the &#8220;Topografisk webbkarta&#8221; service, and paste it. Stored locally in your browser.</div>
-      </div>
       <div class="ctrl">
         <label>Map opacity <span id="vMapOp">0.6</span></label>
         <input type="range" id="slMapOp" min="5" max="100" value="60">
@@ -510,7 +504,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
         <label>Extra padding <span id="vMapPad">20</span>%</label>
         <input type="range" id="slMapPad" min="0" max="60" value="20">
       </div>
-      <div style="font-size:0.5rem;color:#555;line-height:1.5">Tiles: OpenStreetMap / CartoDB / ESRI / Stadia&#183;Stamen / CyclOSM / Lantm&#228;teriet (CC-BY).<br>Usage subject to their terms.</div>
+      <div style="font-size:0.5rem;color:#555;line-height:1.5">Tiles: OpenStreetMap / CartoDB / ESRI / Stadia&#183;Stamen / CyclOSM.<br>Usage subject to their terms.</div>
     </div>
     <div class="tog-row"><span class="tog-label">Background art</span><div class="tog on" id="togArtBg" onclick="layerVis.artBg=!layerVis.artBg;this.classList.toggle('on',layerVis.artBg);render()"></div></div>
     <div class="tog-row"><span class="tog-label">Base route</span><div class="tog on" id="togLayBase" onclick="layerVis.base=!layerVis.base;this.classList.toggle('on',layerVis.base);render()"></div></div>
@@ -1440,9 +1434,6 @@ var TILE_URLS = {
   graydark:  'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
   topo:      'https://tile.opentopomap.org/{z}/{x}/{y}.png',
   cyclosm:   'https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
-  // Lantmäteriet "Topografisk webbkarta" (Swedish topo / friluft look), open CC-BY data.
-  // Uses the Web-Mercator (3857) matrix so it lines up with our projection; needs a free token.
-  lmtopo:    'https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/{lmkey}/1.0.0/topowebb_nedtonad/default/3857/{z}/{y}/{x}.png',
   esritopo:  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
   natgeo:    'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
   satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -1452,27 +1443,17 @@ var TILE_URLS = {
 };
 // Styles that require a Stadia Maps API key.
 var STADIA_STYLES = {watercolor:1, toner:1};
-// Styles that require a Lantmäteriet open-data token.
-var LM_STYLES = {lmtopo:1};
 // Max zoom each style reliably serves tiles at (others use the global default).
-var TILE_MAXZOOM = {natgeo:12, esritopo:16, graylight:16, graydark:16, topo:16, cyclosm:18, lmtopo:14, watercolor:16, toner:18, voyager:20};
+var TILE_MAXZOOM = {natgeo:12, esritopo:16, graylight:16, graydark:16, topo:16, cyclosm:18, watercolor:16, toner:18, voyager:20};
 function getStadiaKey(){ try { return localStorage.getItem('stadiaKey') || ''; } catch(e){ return ''; } }
-function getLmKey(){ try { return localStorage.getItem('lmKey') || ''; } catch(e){ return ''; } }
 function onMapStyleChange(){
-  var style = gp('selMapStyle').value;
-  var needsKey = !!STADIA_STYLES[style], needsLm = !!LM_STYLES[style];
+  var needsKey = !!STADIA_STYLES[gp('selMapStyle').value];
   gp('stadiaKeyCtrl').style.display = needsKey ? 'block' : 'none';
   if(needsKey) gp('inpStadiaKey').value = getStadiaKey();
-  var lmCtrl = gp('lmKeyCtrl');
-  if(lmCtrl){ lmCtrl.style.display = needsLm ? 'block' : 'none'; if(needsLm) gp('inpLmKey').value = getLmKey(); }
   clearTileCache(); render();
 }
 function onStadiaKeyInput(v){
   try { localStorage.setItem('stadiaKey', v.trim()); } catch(e){}
-  clearTileCache(); render();
-}
-function onLmKeyInput(v){
-  try { localStorage.setItem('lmKey', v.trim()); } catch(e){}
   clearTileCache(); render();
 }
 
@@ -1516,7 +1497,6 @@ function getTileUrl(style, z, x, y) {
   var tpl = TILE_URLS[style] || TILE_URLS.osm;
   var url = tpl.replace('{z}', z).replace('{x}', x).replace('{y}', y);
   if (url.indexOf('{key}') >= 0) url = url.replace('{key}', encodeURIComponent(getStadiaKey()));
-  if (url.indexOf('{lmkey}') >= 0) url = url.replace('{lmkey}', encodeURIComponent(getLmKey()));
   return url;
 }
 
