@@ -484,6 +484,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
           <option value="graydark">ESRI Dark Gray (minimal)</option>
           <option value="topo">OpenTopoMap (topographic)</option>
           <option value="cyclosm">CyclOSM (outdoor / trails)</option>
+          <option value="hittafrilufts">Hitta Frilufts &#9968; (Sweden)</option>
           <option value="esritopo">ESRI World Topo</option>
           <option value="natgeo">ESRI National Geographic</option>
           <option value="satellite">ESRI World Imagery (satellite)</option>
@@ -504,7 +505,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
         <label>Extra padding <span id="vMapPad">20</span>%</label>
         <input type="range" id="slMapPad" min="0" max="60" value="20">
       </div>
-      <div style="font-size:0.5rem;color:#555;line-height:1.5">Tiles: OpenStreetMap / CartoDB / ESRI / Stadia&#183;Stamen / CyclOSM.<br>Usage subject to their terms.</div>
+      <div style="font-size:0.5rem;color:#555;line-height:1.5">Tiles: OpenStreetMap / CartoDB / ESRI / Stadia&#183;Stamen / CyclOSM / hitta.se.<br>Usage subject to their terms.</div>
     </div>
     <div class="tog-row"><span class="tog-label">Background art</span><div class="tog on" id="togArtBg" onclick="layerVis.artBg=!layerVis.artBg;this.classList.toggle('on',layerVis.artBg);render()"></div></div>
     <div class="tog-row"><span class="tog-label">Base route</span><div class="tog on" id="togLayBase" onclick="layerVis.base=!layerVis.base;this.classList.toggle('on',layerVis.base);render()"></div></div>
@@ -1434,6 +1435,8 @@ var TILE_URLS = {
   graydark:  'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
   topo:      'https://tile.opentopomap.org/{z}/{x}/{y}.png',
   cyclosm:   'https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+  // Hitta Frilufts (Swedish outdoor map). Retina 512px tiles, TMS y ({invY}), no key. Sweden only.
+  hittafrilufts:'https://static.hitta.se/tile/v3/4_2x/{z}/{x}/{invY}',
   esritopo:  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
   natgeo:    'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
   satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -1444,7 +1447,7 @@ var TILE_URLS = {
 // Styles that require a Stadia Maps API key.
 var STADIA_STYLES = {watercolor:1, toner:1};
 // Max zoom each style reliably serves tiles at (others use the global default).
-var TILE_MAXZOOM = {natgeo:12, esritopo:16, graylight:16, graydark:16, topo:16, cyclosm:18, watercolor:16, toner:18, voyager:20};
+var TILE_MAXZOOM = {natgeo:12, esritopo:16, graylight:16, graydark:16, topo:16, cyclosm:18, hittafrilufts:17, watercolor:16, toner:18, voyager:20};
 function getStadiaKey(){ try { return localStorage.getItem('stadiaKey') || ''; } catch(e){ return ''; } }
 function onMapStyleChange(){
   var needsKey = !!STADIA_STYLES[gp('selMapStyle').value];
@@ -1496,6 +1499,7 @@ function onMapToggle() {
 function getTileUrl(style, z, x, y) {
   var tpl = TILE_URLS[style] || TILE_URLS.osm;
   var url = tpl.replace('{z}', z).replace('{x}', x).replace('{y}', y);
+  if (url.indexOf('{invY}') >= 0) url = url.replace('{invY}', (Math.pow(2, z) - 1 - y));
   if (url.indexOf('{key}') >= 0) url = url.replace('{key}', encodeURIComponent(getStadiaKey()));
   return url;
 }
