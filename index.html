@@ -289,6 +289,110 @@ canvas#overlay{position:absolute;top:0;left:0;}
   .gen-card{width:min(86vw,320px);}
   .gen-card .gc-thumb{aspect-ratio:1.4/1;}
 }
+
+/* ════════════ TAB BAR ════════════ */
+.tab-bar{display:flex;gap:4px;padding:0 18px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;}
+.tab-btn{position:relative;padding:11px 18px;font-family:'Geist',sans-serif;font-size:12.5px;font-weight:500;color:var(--mut2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:color .15s,border-color .15s;letter-spacing:.02em;display:flex;align-items:center;gap:7px;}
+.tab-btn:hover{color:var(--txt2);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-btn .tb-ico{font-size:14px;line-height:1;}
+
+/* ════════════ TRACK STUDIO (scoped under #page-studio) ════════════ */
+#page-studio{flex:1;min-height:0;display:none;flex-direction:column;overflow:hidden;}
+#page-studio.active{display:flex;}
+#page-studio #toolbar{display:flex;gap:6px;align-items:center;padding:7px 12px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;row-gap:6px;z-index:50;}
+#page-studio .ts-group{display:flex;align-items:center;gap:3px;padding:3px 7px 3px 8px;background:var(--surface);border:1px solid var(--bsub2);border-radius:9px;}
+#page-studio .ts-glabel{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut2);margin-right:3px;white-space:nowrap;user-select:none;}
+#page-studio .btn{padding:5px 10px;border-radius:6px;border:1px solid var(--bctrl);background:var(--surface2);color:var(--txt2);font-size:12px;cursor:pointer;white-space:nowrap;transition:all .1s;line-height:1.5;user-select:none;font-family:'Geist',sans-serif;}
+#page-studio .btn:hover{background:var(--hover);border-color:#4a4840;color:var(--txt);}
+#page-studio .btn.on{background:#141e14;border-color:#2a5028;color:var(--ok);}
+#page-studio .btn.on-alt{background:#201808;border-color:#5a4010;color:#c9b896;}
+#page-studio .btn.on-er{background:#200808;border-color:#5a2020;color:#c06060;}
+#page-studio .btn.on-hi{background:#14121e;border-color:#38307a;color:#9090d8;}
+#page-studio .btn.on-pan{background:#101420;border-color:#203050;color:#6090c0;}
+#page-studio .btn.go{background:#141e14;border-color:#2a5028;color:var(--ok);}
+#page-studio .btn.red{color:#c06060;border-color:#481818;}
+#page-studio .btn.red:hover{background:#200808;}
+#page-studio .style-toggle{display:flex;border:1px solid var(--bctrl);border-radius:6px;overflow:hidden;}
+#page-studio .style-toggle .btn{border:none;border-radius:0;border-right:1px solid var(--bctrl);}
+#page-studio .style-toggle .btn:last-child{border-right:none;}
+#page-studio .style-toggle .btn.on{background:#141e14;color:var(--ok);}
+#page-studio #sw-wrap{display:flex;align-items:center;gap:4px;}
+#page-studio #sw,#page-studio #er-sw{width:46px;cursor:pointer;accent-color:var(--accent);}
+#page-studio .sw-val{font-size:10px;color:var(--faint3);min-width:16px;}
+#page-studio #hi-color{width:22px;height:22px;border-radius:4px;border:1px solid var(--bctrl);padding:1px;cursor:pointer;background:none;}
+#page-studio #zoom-val{font-size:10px;color:var(--faint3);min-width:34px;text-align:center;}
+#page-studio #main{display:flex;flex:1;overflow:hidden;min-height:0;}
+#page-studio #sidebar{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+#page-studio #sb-head{padding:8px 11px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--faint3);letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;}
+#page-studio #lbl-list{flex:1;overflow-y:auto;padding:3px 0;min-height:0;}
+#page-studio .lbl-row{display:flex;align-items:center;gap:5px;padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--surface);transition:background .1s;}
+#page-studio .lbl-row:hover{background:var(--surface);}
+#page-studio .lbl-row.sel{background:#141e14;border-left:2px solid var(--ok);}
+#page-studio .lbl-row.sel-a{background:#1c1608;border-left:2px solid #c9b896;}
+#page-studio .lbl-row.sel-t{background:#141814;border-left:2px solid #7aaa7a;}
+#page-studio .lrow-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+#page-studio .lrow-name{font-size:11px;color:var(--mut);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#page-studio .lrow-acts{display:flex;gap:2px;opacity:0;transition:opacity .1s;flex-shrink:0;}
+#page-studio .lbl-row:hover .lrow-acts{opacity:1;}
+#page-studio .lrow-btn{font-size:10px;color:var(--faint3);padding:1px 3px;cursor:pointer;border-radius:3px;line-height:1.4;border:1px solid transparent;}
+#page-studio .lrow-btn:hover{color:var(--txt);background:var(--hover);border-color:var(--bctrl);}
+#page-studio #lbl-empty{padding:16px 10px;font-size:10px;color:var(--faint3);text-align:center;line-height:1.7;}
+#page-studio #inline-edit{border-top:1px solid var(--border);padding:10px;background:var(--app);flex-shrink:0;display:none;}
+#page-studio .ie-ttl{font-size:10px;font-weight:700;color:var(--faint3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;}
+#page-studio #inline-edit input,#page-studio #inline-edit select{width:100%;background:var(--surface);border:1px solid var(--bctrl);border-radius:4px;color:var(--txt2);font-size:11px;padding:5px 7px;margin-bottom:5px;}
+#page-studio #inline-edit input:focus,#page-studio #inline-edit select:focus{outline:none;border-color:var(--accent);}
+#page-studio .ie-btns{display:flex;gap:3px;margin-top:6px;}
+#page-studio .ie-btns .btn{flex:1;font-size:10px;padding:4px 5px;}
+#page-studio #canvas-area{position:relative;flex:1;overflow:hidden;background:var(--app);min-width:0;}
+#page-studio #canvas-area.mode-erase{cursor:none;}
+#page-studio #eraser-cursor{position:absolute;pointer-events:none;z-index:100;display:none;border:1.5px solid rgba(200,80,80,.8);border-radius:50%;transform:translate(-50%,-50%);}
+#page-studio #viewport{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform;}
+#page-studio #viewport canvas{position:absolute;top:0;left:0;display:block;}
+#page-studio #c-bg{z-index:1;}
+#page-studio #c-trace{z-index:2;}
+#page-studio #c-render{z-index:3;}
+#page-studio #c-live{z-index:4;}
+#page-studio #pins{position:absolute;top:0;left:0;z-index:5;pointer-events:none;}
+#page-studio #sf-layer{position:absolute;top:0;left:0;z-index:6;pointer-events:none;}
+/* Leader-line label: tiny anchor dot on the track + short line to an offset name box */
+#page-studio .pin{position:absolute;--z:1;width:0;height:0;}
+#page-studio .pin-scale{position:absolute;left:0;top:0;transform:scale(calc(1/var(--z)));transform-origin:0 0;}
+#page-studio .pin-dot{position:absolute;left:0;top:0;width:8px;height:8px;border-radius:50%;background:currentColor;border:1.5px solid rgba(8,8,6,.85);transform:translate(-50%,-50%);box-shadow:0 0 4px currentColor;pointer-events:all;cursor:pointer;transition:transform .12s;}
+#page-studio .pin-line{position:absolute;left:0;top:0;height:1.5px;background:currentColor;opacity:.75;transform-origin:0 0;pointer-events:none;}
+#page-studio .pin-lbl{position:absolute;left:0;top:0;background:rgba(8,8,6,.94);border:1px solid rgba(255,255,255,.12);border-radius:4px;padding:2px 7px;font-size:10px;white-space:nowrap;font-weight:600;letter-spacing:.03em;color:currentColor;pointer-events:all;cursor:pointer;}
+#page-studio .pin:hover .pin-dot,#page-studio .pin.active .pin-dot{transform:translate(-50%,-50%) scale(1.5);}
+#page-studio .pin.active .pin-lbl{border-color:currentColor;box-shadow:0 0 10px rgba(0,0,0,.55);}
+#page-studio .pin.main{color:#d8d4c0;}
+#page-studio .pin.alt{color:#c9b896;}
+#page-studio .pin.tbd{color:#7aaa7a;}
+#page-studio #sf-el{position:absolute;cursor:grab;transform:translate(-10px,-100%);}
+#page-studio #sf-el:active{cursor:grabbing;}
+#page-studio #status{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(8,8,6,.86);border:1px solid var(--border);border-radius:18px;padding:4px 14px;font-size:10px;color:var(--faint2);z-index:30;pointer-events:none;white-space:nowrap;}
+#page-studio #dropzone{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--faint3);pointer-events:none;z-index:1;}
+#page-studio #dropzone .dz-i{font-size:44px;opacity:.16;margin-bottom:8px;}
+#page-studio #dropzone p{font-size:13px;margin-bottom:3px;}
+#page-studio #dropzone small{font-size:10px;color:var(--faint3);}
+#page-studio #render-panel{position:absolute;top:12px;right:12px;background:var(--panel);border:1px solid var(--bctrl);border-radius:10px;padding:13px;z-index:40;display:none;width:224px;box-shadow:0 12px 40px rgba(0,0,0,.6);}
+#page-studio .rp-title{font-size:10px;font-weight:700;color:var(--faint3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;}
+#page-studio .rp-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;gap:6px;}
+#page-studio .rp-row label{font-size:10px;color:var(--faint);white-space:nowrap;min-width:72px;}
+#page-studio .rp-row input[type=range]{flex:1;accent-color:var(--accent);cursor:pointer;}
+#page-studio .rp-row span{font-size:10px;color:var(--faint3);min-width:26px;text-align:right;}
+#page-studio .rp-preview{width:100%;min-height:90px;border-radius:5px;background:var(--app);border:1px solid var(--border);margin-bottom:8px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;}
+#page-studio #rp-canvas{max-width:100%;display:block;}
+#page-studio #render-panel{width:280px;}
+#page-studio .rp-hint{font-size:9px;color:var(--faint);text-align:center;margin:-2px 0 8px;}
+#page-studio .rp-btns{display:flex;gap:4px;margin-top:8px;}
+#page-studio .rp-btns .btn{flex:1;font-size:10px;padding:4px 5px;}
+#page-studio #legend{position:absolute;bottom:28px;right:10px;background:rgba(8,8,6,.92);border:1px solid var(--border);border-radius:8px;padding:9px 12px;z-index:30;pointer-events:auto;cursor:grab;min-width:152px;user-select:none;}
+#page-studio #legend:active{cursor:grabbing;}
+#page-studio #legend .lg-drag{font-size:8px;color:var(--faint3);letter-spacing:.06em;margin-top:5px;text-align:center;}
+#page-studio #lg-title{font-size:9px;font-weight:700;color:var(--faint3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+#page-studio .lg{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--faint2);margin-bottom:4px;}
+#page-studio .lg:last-child{margin-bottom:0;}
+#page-studio .lg-line{width:22px;height:3px;border-radius:1.5px;flex-shrink:0;}
+#page-studio .lg-dash{width:22px;height:0;border-top:3px dashed #c9b896;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -336,7 +440,13 @@ canvas#overlay{position:absolute;top:0;left:0;}
     <a href="https://ko-fi.com/ehrenholm" target="_blank" id="kofiBtn" class="support-pill">☕ Support</a>
   </div>
 </header>
-<div class="workspace">
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-gpx"    onclick="switchTab('gpx')"><span class="tb-ico">🗺</span>GPX Poster</button>
+  <button class="tab-btn"        id="tab-studio" onclick="switchTab('studio')"><span class="tb-ico">🏁</span>Track Studio</button>
+</div>
+
+<div class="workspace" id="page-gpx">
 <div class="sheet-scrim" id="sheetScrim" onclick="toggleSheet(false)"></div>
 <div class="panel">
   <div class="sheet-handle" onclick="toggleSheet()"><div class="sheet-grip"></div><span>Controls</span></div>
@@ -658,7 +768,150 @@ canvas#overlay{position:absolute;top:0;left:0;}
   <div class="ctx-item" onclick="ctxDuplicate()">&#10063; Duplicate</div>
   <div class="ctx-item" onclick="ctxDelete()" style="color:#c06060">&#10005; Delete</div>
 </div>
-</div>
+</div><!-- end #page-gpx workspace -->
+
+<!-- ════════════ TRACK STUDIO PAGE ════════════ -->
+<div id="page-studio">
+  <div id="toolbar">
+    <span class="ts-glabel" style="color:var(--accent);font-size:9px;margin-right:2px">Track&nbsp;Studio</span>
+
+    <div class="ts-group">
+      <span class="ts-glabel">File</span>
+      <button class="btn" onclick="TS.triggerFile('f-bg')">📷 Image</button>
+      <input type="file" id="f-bg" accept="image/*" style="display:none" onchange="TS.loadBg(event)">
+      <button class="btn go" id="btn-from-ra" onclick="TS.loadFromRouteArt()" title="Use the current GPX poster as the Track Studio background">⬇ From RouteArt</button>
+      <button class="btn" id="btn-bg" onclick="TS.toggleBg()">👁 BG</button>
+    </div>
+
+    <div class="ts-group">
+      <span class="ts-glabel">Style</span>
+      <div class="style-toggle">
+        <button class="btn on" id="sty-dark"  onclick="TS.setStyle('dark')"  title="Dark background">◼</button>
+        <button class="btn"    id="sty-light" onclick="TS.setStyle('light')" title="Light background">◻</button>
+        <button class="btn"    id="sty-trans" onclick="TS.setStyle('trans')" title="Transparent (export only)">⬚</button>
+      </div>
+    </div>
+
+    <div class="ts-group">
+      <span class="ts-glabel">View</span>
+      <button class="btn" id="btn-pan" onclick="TS.setMode('pan')" title="Pan (or hold Space+drag)">✥</button>
+      <button class="btn" onclick="TS.zoomStep(1.25)" title="Zoom in">＋</button>
+      <button class="btn" onclick="TS.zoomStep(0.8)"  title="Zoom out">－</button>
+      <button class="btn" onclick="TS.resetView()"    title="Fit to view">⊡</button>
+      <span id="zoom-val">100%</span>
+    </div>
+
+    <div class="ts-group">
+      <span class="ts-glabel">Draw</span>
+      <button class="btn" id="btn-std" onclick="TS.setMode('std')"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d8d4c0;margin-right:3px;vertical-align:middle"></span>Std</button>
+      <button class="btn" id="btn-alt" onclick="TS.setMode('alt')"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c9b896;margin-right:3px;vertical-align:middle"></span>Alt</button>
+      <span id="sw-wrap">
+        <input type="range" id="sw" min="2" max="28" value="8" oninput="TS.setStroke(this.value)">
+        <span class="sw-val" id="sw-val">8</span>
+      </span>
+    </div>
+
+    <div class="ts-group">
+      <span class="ts-glabel">Color</span>
+      <button class="btn" id="btn-hi" onclick="TS.setMode('hi')"><span id="hi-sw" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#9090d8;margin-right:3px;vertical-align:middle"></span>Recolor</button>
+      <input type="color" id="hi-color" value="#9090d8" oninput="TS.setHiColor(this.value)">
+    </div>
+
+    <div class="ts-group">
+      <span class="ts-glabel">Erase</span>
+      <button class="btn" id="btn-er" onclick="TS.setMode('erase')">⌫</button>
+      <input type="range" id="er-sw" min="2" max="60" value="10" oninput="TS.setEraseR(this.value)">
+      <span class="sw-val" id="er-val">10</span>
+    </div>
+
+    <div class="ts-group">
+      <span class="ts-glabel">Edit</span>
+      <button class="btn" onclick="TS.undo()">↩ Undo</button>
+      <button class="btn red" onclick="TS.clearTraces()" title="Clear all traces">✕</button>
+    </div>
+
+    <div class="ts-group">
+      <span class="ts-glabel">Labels</span>
+      <button class="btn" id="btn-lbl"     onclick="TS.setMode('lbl')">﹢ Label</button>
+      <button class="btn" id="btn-lbl-alt" onclick="TS.setMode('lbl-alt')">﹢ Alt</button>
+      <button class="btn" id="btn-lbl-tbd" onclick="TS.setMode('lbl-tbd')">﹢ TBD</button>
+      <button class="btn" id="btn-sf"      onclick="TS.setMode('sf')">⚑ S/F</button>
+    </div>
+
+    <div class="ts-group">
+      <span class="ts-glabel">Output</span>
+      <button class="btn go" onclick="TS.openRenderPanel()">✦ Render</button>
+      <button class="btn" id="btn-rv" onclick="TS.toggleRender()" style="display:none" title="Toggle render view">👁</button>
+      <button class="btn" onclick="TS.exportImg()" title="Export PNG">🖼</button>
+      <button class="btn" onclick="TS.saveJSON()" title="Save session">💾</button>
+      <button class="btn" onclick="TS.triggerFile('f-json')" title="Load session">📂</button>
+      <input type="file" id="f-json" accept=".json" style="display:none" onchange="TS.loadJSON(event)">
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="sidebar">
+      <div id="sb-head"><span>Labels</span><span id="lbl-count" style="color:var(--faint3);font-size:9px">0</span></div>
+      <div id="lbl-list"><div id="lbl-empty">No labels yet.<br>Use ﹢ Label then<br>click on the track.</div></div>
+      <div id="inline-edit">
+        <div class="ie-ttl">Edit label</div>
+        <input id="ie-name" type="text" placeholder="Section name…" onkeydown="if(event.key==='Enter')TS.saveLabel()">
+        <select id="ie-type">
+          <option value="main">Main section</option>
+          <option value="alt">Alternative section</option>
+          <option value="tbd">Needs a name (TBD)</option>
+        </select>
+        <div class="ie-btns">
+          <button class="btn go"  onclick="TS.saveLabel()">Save</button>
+          <button class="btn"     onclick="TS.copyLabel()" title="Duplicate">⎘</button>
+          <button class="btn red" onclick="TS.deleteLabel()">Del</button>
+          <button class="btn"     onclick="TS.closeEdit()">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="canvas-area">
+      <div id="eraser-cursor"></div>
+      <div id="viewport">
+        <canvas id="c-bg"></canvas>
+        <canvas id="c-trace"></canvas>
+        <canvas id="c-render" style="display:none"></canvas>
+        <canvas id="c-live"></canvas>
+        <div id="pins"></div>
+        <div id="sf-layer"></div>
+      </div>
+
+      <div id="dropzone">
+        <div class="dz-i">🏁</div>
+        <p>Load a screenshot, or click ⬇ From RouteArt</p>
+        <small>Std · Alt · Recolor · Erase · Pan/Zoom</small>
+      </div>
+      <div id="status">Browse — select a tool above</div>
+
+      <div id="render-panel">
+        <div class="rp-title">Render settings</div>
+        <div class="rp-row"><label>Smoothing</label><input type="range" id="rp-smooth" min="0" max="10" step="1"   value="3"   oninput="TS.rpV('rp-smooth-v',this.value);TS.schedLiveRender()"><span id="rp-smooth-v">3</span></div>
+        <div class="rp-row"><label>Tolerance</label><input type="range" id="rp-tol"    min="0" max="15" step="0.5" value="2.5" oninput="TS.rpV('rp-tol-v',this.value);TS.schedLiveRender()"><span id="rp-tol-v">2.5</span></div>
+        <div class="rp-row"><label>Glow</label>     <input type="range" id="rp-glow"   min="0" max="1"  step="0.05" value="0.4" oninput="TS.rpV('rp-glow-v',this.value);TS.schedLiveRender()"><span id="rp-glow-v">0.4</span></div>
+        <div class="rp-row"><label>Width ×</label>  <input type="range" id="rp-lw"     min="0.4" max="2.5" step="0.1" value="1" oninput="TS.rpV('rp-lw-v',this.value);TS.schedLiveRender()"><span id="rp-lw-v">1</span></div>
+        <div class="rp-preview"><canvas id="rp-canvas" width="196" height="88"></canvas></div>
+        <div class="rp-hint">Live preview also shown full-size on the canvas</div>
+        <div class="rp-btns">
+          <button class="btn go" onclick="TS.doRender();TS.closeRenderPanel()">✦ Apply</button>
+          <button class="btn" onclick="TS.closeRenderPanel()">Done</button>
+        </div>
+      </div>
+
+      <div id="legend">
+        <div id="lg-title">Track legend</div>
+        <div class="lg"><div class="lg-line" style="background:#d8d4c0"></div>Standard lap</div>
+        <div class="lg"><div class="lg-dash"></div>Alternative section</div>
+        <div class="lg" id="lg-hi" style="display:none"><div class="lg-line" id="lg-hi-line"></div><span id="lg-hi-txt">Recolored</span></div>
+        <div class="lg" id="lg-sf" style="display:none"><div style="width:22px;text-align:center">⚑</div>Start / Finish</div>
+      </div>
+    </div>
+  </div>
+</div><!-- end #page-studio -->
 
 <!-- Style proposals overlay: 3 auto-generated looks, click to adopt -->
 <div class="gen-overlay" id="genOverlay">
@@ -3168,6 +3421,845 @@ function showTourHint(){
   setTimeout(closeTourHint,12000);
 }
 try{ if(!localStorage.getItem('tourHintSeen')) setTimeout(showTourHint,800); }catch(e){}
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB SWITCHER (GPX Poster ⇄ Track Studio)
+// ═══════════════════════════════════════════════════════════════════
+function switchTab(tab){
+  gp('page-gpx').style.display = tab==='gpx' ? 'flex' : 'none';
+  gp('page-studio').classList.toggle('active', tab==='studio');
+  gp('tab-gpx').classList.toggle('active', tab==='gpx');
+  gp('tab-studio').classList.toggle('active', tab==='studio');
+  // Once the studio becomes visible it finally has real dimensions — fit the view.
+  if(tab==='studio' && window.TS && TS.resetView){ setTimeout(TS.resetView, 30); }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TRACK STUDIO — fully isolated in an IIFE so its globals (mode, CW,
+// setMode, getPos, render, …) never collide with RouteArt's. Only the
+// handlers referenced by the studio markup are exposed via window.TS.
+// ═══════════════════════════════════════════════════════════════════
+(function(){
+// ── STATE ──
+let mode='browse', segments=[], labels=[], sfPos=null;
+let labelId=0, segId=0;
+let drawing=false, curPts=[];
+let strokeW=8, hiColor='#9090d8', eraseR=10;
+let bgImg=null, bgVisible=true, renderVis=false;
+let selId=null, pinDrag=null, sfDrag=false;
+let undoStack=[];
+let bgStyle='dark'; // 'dark' | 'light' | 'trans'
+
+// Viewport
+let vZoom=1, vPanX=0, vPanY=0;
+let isPanning=false, spaceDown=false, panStart=null, panOrigin=null;
+
+// Canvas logical size
+let CW=1200, CH=900;
+
+// DOM refs
+const cArea  = document.getElementById('canvas-area');
+const vp     = document.getElementById('viewport');
+const cBg    = document.getElementById('c-bg');
+const cTr    = document.getElementById('c-trace');
+const cRe    = document.getElementById('c-render');
+const cLi    = document.getElementById('c-live');
+const pinsEl = document.getElementById('pins');
+const sfLayer= document.getElementById('sf-layer');
+const stEl   = document.getElementById('status');
+const lblList= document.getElementById('lbl-list');
+const ieEl   = document.getElementById('inline-edit');
+const erCur  = document.getElementById('eraser-cursor');
+const rpCanv = document.getElementById('rp-canvas');
+const rpCtx  = rpCanv.getContext('2d');
+const xBg=cBg.getContext('2d'), xTr=cTr.getContext('2d'), xRe=cRe.getContext('2d'), xLi=cLi.getContext('2d');
+const TC={main:'#d8d4c0', alt:'#c9b896', tbd:'#7aaa7a'};
+
+// ── Init / Resize ──
+function initCanvases(){
+  [cBg,cTr,cRe,cLi].forEach(c=>{c.width=CW;c.height=CH;c.style.width=CW+'px';c.style.height=CH+'px';});
+  pinsEl.style.width=CW+'px'; pinsEl.style.height=CH+'px';
+  sfLayer.style.width=CW+'px'; sfLayer.style.height=CH+'px';
+  vp.style.width=CW+'px'; vp.style.height=CH+'px';
+}
+function applyTransform(){
+  vp.style.transform=`translate(${vPanX}px,${vPanY}px) scale(${vZoom})`;
+  document.getElementById('zoom-val').textContent=Math.round(vZoom*100)+'%';
+  document.querySelectorAll('#page-studio .pin').forEach(p=>p.style.setProperty('--z',vZoom));
+}
+function resetView(){
+  const aw=cArea.clientWidth, ah=cArea.clientHeight;
+  if(!aw||!ah)return;            // tab hidden / not laid out yet — don't corrupt the view transform
+  const sc=Math.min(aw/CW, ah/CH)*0.9;
+  vZoom=sc; vPanX=(aw-CW*sc)/2; vPanY=(ah-CH*sc)/2;
+  applyTransform();
+}
+window.addEventListener('resize',resetView);
+
+// ── Zoom ──
+function zoomStep(factor, cx, cy){
+  const aw=cArea.clientWidth, ah=cArea.clientHeight;
+  cx=cx??aw/2; cy=cy??ah/2;
+  const nz=Math.max(0.1,Math.min(10,vZoom*factor));
+  vPanX=cx-(cx-vPanX)*(nz/vZoom);
+  vPanY=cy-(cy-vPanY)*(nz/vZoom);
+  vZoom=nz; applyTransform();
+}
+cArea.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const r=cArea.getBoundingClientRect();
+  zoomStep(e.deltaY<0?1.12:1/1.12, e.clientX-r.left, e.clientY-r.top);
+},{passive:false});
+
+function toCanvas(sx,sy){
+  const r=cArea.getBoundingClientRect();
+  return {x:(sx-r.left-vPanX)/vZoom, y:(sy-r.top-vPanY)/vZoom};
+}
+
+// ── Pan ──
+window.addEventListener('keydown',e=>{if(e.code==='Space'&&!e.repeat){spaceDown=true;if(mode!=='pan')cArea.style.cursor='grab';}});
+window.addEventListener('keyup',  e=>{if(e.code==='Space'){spaceDown=false;if(mode!=='pan')syncCursor();}});
+function startPan(sx,sy){isPanning=true;panStart={x:sx,y:sy};panOrigin={x:vPanX,y:vPanY};}
+function movePan(sx,sy){if(!isPanning)return;vPanX=panOrigin.x+(sx-panStart.x);vPanY=panOrigin.y+(sy-panStart.y);applyTransform();}
+function endPan(){isPanning=false;}
+
+// Pinch
+let pinchD0=0, pinchZ0=1;
+function initPinch(e){const t=e.touches;pinchD0=Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);pinchZ0=vZoom;}
+function doPinch(e){
+  const t=e.touches,d=Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+  const cx=(t[0].clientX+t[1].clientX)/2,cy=(t[0].clientY+t[1].clientY)/2;
+  const r=cArea.getBoundingClientRect(),nz=Math.max(0.1,Math.min(10,pinchZ0*(d/pinchD0)));
+  vPanX=(cx-r.left)-(cx-r.left-vPanX)*(nz/vZoom);
+  vPanY=(cy-r.top) -(cy-r.top -vPanY)*(nz/vZoom);
+  vZoom=nz; applyTransform();
+}
+
+// ── Style toggle ──
+function setStyle(s){
+  bgStyle=s;
+  cArea.style.background=s==='light'?'#f0ece0':s==='trans'?'repeating-conic-gradient(#1a1813 0% 25%,#141209 0% 50%) 0 0/16px 16px':'#0b0a08';
+  ['dark','light','trans'].forEach(k=>document.getElementById('sty-'+k).classList.toggle('on',k===s));
+  redrawBg();
+}
+
+// ── Mode ──
+const HINTS={
+  browse:'Browse — click pin or sidebar · scroll=zoom · Space+drag=pan',
+  pan:'Pan — drag to pan · scroll to zoom',
+  std:'Std lap — click+drag to draw',
+  alt:'Alt section — click+drag to draw (dashed)',
+  hi:'Recolor — drag over track to repaint that part',
+  erase:'Erase — drag over points to remove them',
+  lbl:'Label — click on track to place',
+  'lbl-alt':'Alt label — click on track',
+  'lbl-tbd':'TBD label — click on track',
+  sf:'Start/Finish — click to place · drag flag to reposition'
+};
+const BTNMAP={std:'btn-std',alt:'btn-alt',hi:'btn-hi',erase:'btn-er',pan:'btn-pan',lbl:'btn-lbl','lbl-alt':'btn-lbl-alt','lbl-tbd':'btn-lbl-tbd',sf:'btn-sf'};
+const BTNCLASS={std:'on',alt:'on-alt',hi:'on-hi',erase:'on-er',pan:'on-pan',lbl:'on','lbl-alt':'on-alt','lbl-tbd':'on',sf:'on'};
+function setMode(m){
+  mode=m; stEl.textContent=HINTS[m]||m;
+  Object.values(BTNMAP).forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on','on-alt','on-hi','on-er','on-pan');});
+  if(BTNMAP[m]){const el=document.getElementById(BTNMAP[m]);if(el)el.classList.add(BTNCLASS[m]||'on');}
+  syncCursor();
+  if(!m.startsWith('lbl'))closeEdit();
+  closeRenderPanel();
+  erCur.style.display=m==='erase'?'block':'none';
+}
+function syncCursor(){
+  if(mode==='erase'){cArea.classList.add('mode-erase');cArea.style.cursor='';}
+  else{cArea.classList.remove('mode-erase');
+    cArea.style.cursor=(mode==='pan'||spaceDown)?'grab':(mode==='std'||mode==='alt'||mode==='hi')?'crosshair':mode.startsWith('lbl')||mode==='sf'?'copy':'default';}
+}
+function updateEraserCursor(){
+  const sz=Math.max(4,eraseR*2*vZoom);
+  erCur.style.width=sz+'px'; erCur.style.height=sz+'px';
+}
+
+// ── Toolbar value setters (were inline globals before isolation) ──
+function setStroke(v){strokeW=+v;document.getElementById('sw-val').textContent=v;}
+function setHiColor(v){hiColor=v;document.getElementById('hi-sw').style.background=v;}
+function setEraseR(v){eraseR=+v;document.getElementById('er-val').textContent=v;updateEraserCursor();}
+
+// ── BG Image ──
+function triggerFile(id){document.getElementById(id).click();}
+function loadBg(e){
+  const f=e.target.files[0];if(!f)return;
+  const img=new Image();
+  img.onload=()=>{ adoptBgImage(img); };
+  img.src=URL.createObjectURL(f);
+}
+// Pull the rendered GPX poster from the RouteArt tab as the studio background.
+function loadFromRouteArt(){
+  const src=document.getElementById('poster');
+  if(!(window.rawPts&&rawPts.length)||!src||!src.width){
+    alert('Load a GPX on the “GPX Poster” tab first — then it can be used as the background here.');
+    return;
+  }
+  const img=new Image();
+  img.onload=()=>{ adoptBgImage(img); stEl.textContent='Loaded poster from RouteArt — start tracing'; };
+  img.src=src.toDataURL('image/png');
+}
+function adoptBgImage(img){
+  bgImg=img; CW=img.width; CH=img.height;
+  initCanvases(); bgVisible=true;
+  document.getElementById('btn-bg').classList.add('on');
+  document.getElementById('dropzone').style.display='none';
+  resetView(); redrawBg(); redrawTrace(); refreshSFEl();
+}
+function redrawBg(){
+  xBg.clearRect(0,0,CW,CH);
+  if(!bgImg||!bgVisible)return;
+  xBg.drawImage(bgImg,0,0,CW,CH);
+}
+function toggleBg(){bgVisible=!bgVisible;document.getElementById('btn-bg').classList.toggle('on',bgVisible);redrawBg();}
+
+// ── Events ──
+cLi.addEventListener('mousedown',e=>{
+  if(e.button!==0)return;
+  if(spaceDown||mode==='pan'){startPan(e.clientX,e.clientY);return;}
+  onDown(e);
+});
+cLi.addEventListener('mousemove',e=>{
+  if(isPanning){movePan(e.clientX,e.clientY);return;}
+  if(mode==='erase'){
+    const r=cArea.getBoundingClientRect();
+    const sz=Math.max(4,eraseR*2*vZoom);
+    erCur.style.left=(e.clientX-r.left)+'px';
+    erCur.style.top =(e.clientY-r.top )+'px';
+    erCur.style.width=sz+'px'; erCur.style.height=sz+'px';
+    erCur.style.display='block';
+  }
+  onMove(e);
+});
+cLi.addEventListener('mouseleave',()=>{endPan();onUp(null);erCur.style.display='none';});
+cLi.addEventListener('mouseup',e=>{endPan();onUp(e);});
+cLi.addEventListener('touchstart',e=>{e.preventDefault();if(e.touches.length===2)initPinch(e);else onDown(e);},{passive:false});
+cLi.addEventListener('touchmove', e=>{e.preventDefault();if(e.touches.length===2)doPinch(e);else onMove(e);},{passive:false});
+cLi.addEventListener('touchend',  e=>{e.preventDefault();onUp(e);},{passive:false});
+
+function getSrc(e){return e.touches?e.touches[0]:e;}
+function getPos(e){const s=getSrc(e);return toCanvas(s.clientX,s.clientY);}
+
+function onDown(e){
+  if(!e||pinDrag||sfDrag)return;
+  const p=getPos(e);
+  if(mode.startsWith('lbl')){placeLabel(p);return;}
+  if(mode==='sf'){placeSF(p);return;}
+  if(mode==='std'||mode==='alt'||mode==='hi'||mode==='erase'){pushUndo();drawing=true;curPts=[p];}
+}
+function onMove(e){
+  if(!e||!drawing)return;
+  const p=getPos(e);
+  curPts.push(p);
+  xLi.clearRect(0,0,CW,CH);
+  if(mode==='erase'){
+    erasePointsNear(p,eraseR/vZoom);
+  } else if(mode==='hi'){
+    xLi.save();xLi.strokeStyle=hiColor;xLi.lineWidth=(strokeW+8)/vZoom;xLi.globalAlpha=.15;xLi.lineCap='round';
+    xLi.beginPath();xLi.arc(p.x,p.y,(strokeW+8)/vZoom/2,0,Math.PI*2);xLi.stroke();xLi.restore();
+    recolorNear(p,(strokeW+6)/vZoom,hiColor);
+  } else {
+    drawStroke(xLi,curPts,mode==='alt'?'#c9b896':'#d8d4c0',strokeW,mode==='alt',.88);
+  }
+}
+function onUp(e){
+  if(!drawing)return;
+  drawing=false;
+  xLi.clearRect(0,0,CW,CH);
+  if(mode==='erase'||mode==='hi'){curPts=[];return;}
+  if(curPts.length>2){
+    segments.push({id:++segId,type:mode,color:mode==='alt'?'#c9b896':'#d8d4c0',pts:[...curPts],w:strokeW});
+    redrawTrace();
+    if(renderVis)schedLiveRender();
+  }
+  curPts=[];
+}
+
+// ── Erase — point level ──
+function erasePointsNear(p,radius){
+  const r2=radius*radius;
+  const out=[];
+  for(const seg of segments){
+    let run=[];
+    for(const pt of seg.pts){
+      if((pt.x-p.x)**2+(pt.y-p.y)**2<r2){
+        if(run.length>2)out.push({...seg,id:++segId,pts:run});
+        run=[];
+      } else run.push(pt);
+    }
+    if(run.length>2)out.push({...seg,id:++segId,pts:run});
+  }
+  segments=out;
+  xTr.clearRect(0,0,CW,CH);drawAllSegments(xTr);
+}
+
+// ── Recolor — preserves all points, only changes colour ──
+function recolorNear(p,radius,color){
+  const r2=radius*radius;
+  const out=[];
+  for(const seg of segments){
+    let i=0;
+    while(i<seg.pts.length){
+      const isHit=pt=>(pt.x-p.x)**2+(pt.y-p.y)**2<r2;
+      const h=isHit(seg.pts[i]);
+      let j=i;
+      while(j<seg.pts.length&&isHit(seg.pts[j])===h)j++;
+      const run=seg.pts.slice(i,j);
+      if(run.length>0){
+        out.push({...seg,id:++segId,pts:run,color:h?color:seg.color});
+      }
+      i=j;
+    }
+  }
+  segments=out;
+  document.getElementById('lg-hi').style.display='flex';
+  document.getElementById('lg-hi-line').style.background=color;
+  xTr.clearRect(0,0,CW,CH);drawAllSegments(xTr);
+}
+
+// ── Stroke drawing ──
+function drawStroke(ctx,pts,color,width,dashed,alpha){
+  if(pts.length<2)return;
+  ctx.save();
+  ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.globalAlpha=alpha!==undefined?alpha:.92;
+  ctx.setLineDash(dashed?[width*2.2,width*1.1]:[]);
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length-1;i++)
+    ctx.quadraticCurveTo(pts[i].x,pts[i].y,(pts[i].x+pts[i+1].x)/2,(pts[i].y+pts[i+1].y)/2);
+  ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
+  ctx.stroke();ctx.restore();
+}
+function drawAllSegments(ctx){
+  segments.filter(s=>s.type==='std'&&s.color==='#d8d4c0').forEach(s=>drawStroke(ctx,s.pts,s.color,s.w,false,.92));
+  segments.filter(s=>s.type==='alt'&&s.color==='#c9b896').forEach(s=>drawStroke(ctx,s.pts,s.color,s.w,true,.88));
+  segments.filter(s=>s.color!=='#d8d4c0'&&s.color!=='#c9b896').forEach(s=>drawStroke(ctx,s.pts,s.color,s.w,false,.92));
+}
+function redrawTrace(){xTr.clearRect(0,0,CW,CH);drawAllSegments(xTr);}
+
+// ── Undo ──
+function pushUndo(){undoStack.push(segments.map(s=>({...s,pts:[...s.pts]})));if(undoStack.length>50)undoStack.shift();}
+function undo(){if(!undoStack.length)return;segments=undoStack.pop();redrawTrace();if(renderVis)schedLiveRender();}
+function clearTraces(){if(!confirm('Clear all traces?'))return;pushUndo();segments=[];redrawTrace();if(renderVis)schedLiveRender();}
+
+// ── RDP + Chaikin ──
+function rdp(pts,tol){
+  if(pts.length<=2)return pts;
+  const p1=pts[0],p2=pts[pts.length-1];
+  const dx=p2.x-p1.x,dy=p2.y-p1.y,len=Math.sqrt(dx*dx+dy*dy);
+  let maxD=0,idx=0;
+  for(let i=1;i<pts.length-1;i++){
+    const d=len>0?Math.abs(dy*pts[i].x-dx*pts[i].y+p2.x*p1.y-p2.y*p1.x)/len:Math.hypot(pts[i].x-p1.x,pts[i].y-p1.y);
+    if(d>maxD){maxD=d;idx=i;}
+  }
+  if(maxD>tol){const l=rdp(pts.slice(0,idx+1),tol),r=rdp(pts.slice(idx),tol);return[...l.slice(0,-1),...r];}
+  return[p1,p2];
+}
+function chaikin(pts,passes){
+  let p=[...pts];
+  for(let n=0;n<passes;n++){
+    const q=[p[0]];
+    for(let i=0;i<p.length-1;i++){
+      q.push({x:.75*p[i].x+.25*p[i+1].x,y:.75*p[i].y+.25*p[i+1].y});
+      q.push({x:.25*p[i].x+.75*p[i+1].x,y:.25*p[i].y+.75*p[i+1].y});
+    }
+    q.push(p[p.length-1]);p=q;
+  }
+  return p;
+}
+function chainSegments(segs){
+  if(!segs.length)return[];
+  const chains=[];
+  let cur={...segs[0],pts:[...segs[0].pts]};
+  for(let i=1;i<segs.length;i++){
+    const s=segs[i];
+    const tail=cur.pts[cur.pts.length-1],head=s.pts[0];
+    const gap=Math.hypot(tail.x-head.x,tail.y-head.y);
+    if(s.color===cur.color&&gap<40){cur.pts.push(...s.pts);}
+    else{chains.push(cur);cur={...s,pts:[...s.pts]};}
+  }
+  chains.push(cur);return chains;
+}
+
+// ── Render ──
+function rpV(id,v){document.getElementById(id).textContent=v;}
+let liveTimer=null;
+// Leader-line geometry: anchor(0,0) → short line → one corner of the name box.
+const PIN_DIRS=['ne','se','sw','nw'];
+function pinGeom(dir){
+  const L=17, d=L*0.7071;
+  const m={
+    ne:{rot:-45, bx: d, by:-d, tx:0,    ty:-100},
+    se:{rot: 45, bx: d, by: d, tx:0,    ty:0   },
+    sw:{rot:135, bx:-d, by: d, tx:-100, ty:0   },
+    nw:{rot:225, bx:-d, by:-d, tx:-100, ty:-100}
+  };
+  return Object.assign({L}, m[dir]||m.ne);
+}
+
+// When the render canvas is shown it already draws labels/flag/legend, so hide
+// the live DOM overlays to avoid drawing them twice (the "duplicated labels" bug).
+function setOverlaysHidden(h){
+  // The render canvas re-draws pins + S/F, so hide those to avoid doubling. The
+  // legend is NOT baked on screen, so the (movable) DOM legend stays visible.
+  pinsEl.style.display=h?'none':'';
+  sfLayer.style.display=h?'none':'';
+}
+function showRenderCanvas(on){ cRe.style.display=on?'block':'none'; setOverlaysHidden(on); }
+
+let panelPreview=false, prevRenderVis=false;
+function liveUS(){ return Math.max(0.45, 1/vZoom); } // label scale matching on-screen DOM pins
+function sizeRpCanvas(){
+  const maxW=256,maxH=200, sc=Math.min(maxW/CW,maxH/CH);
+  rpCanv.width =Math.max(40,Math.round(CW*sc));
+  rpCanv.height=Math.max(40,Math.round(CH*sc));
+}
+function schedLiveRender(){clearTimeout(liveTimer);liveTimer=setTimeout(()=>{
+  doRenderToCtx(rpCtx,rpCanv.width,rpCanv.height,true);
+  if(panelPreview||renderVis)doRenderToCtx(xRe,CW,CH,false,{uiScale:liveUS()}); // live preview in the real frame
+},60);}
+function openRenderPanel(){
+  document.getElementById('render-panel').style.display='block';
+  prevRenderVis=renderVis; panelPreview=true;
+  sizeRpCanvas();
+  doRenderToCtx(xRe,CW,CH,false,{uiScale:liveUS()});   // full-size live preview in the actual canvas frame
+  showRenderCanvas(true);
+  schedLiveRender();
+}
+function closeRenderPanel(){
+  document.getElementById('render-panel').style.display='none';
+  if(panelPreview){            // closed without Apply → revert to whatever was showing before
+    panelPreview=false; renderVis=prevRenderVis; showRenderCanvas(renderVis);
+    document.getElementById('btn-rv').classList.toggle('on',renderVis);
+  }
+}
+
+function doRenderToCtx(ctx,w,h,isThumb,opts){
+  opts=opts||{};
+  const smooth=+document.getElementById('rp-smooth').value;
+  const tol   =+document.getElementById('rp-tol').value;
+  const glowA =+document.getElementById('rp-glow').value;
+  const lwMul =+document.getElementById('rp-lw').value;
+  const scaleX=w/CW, scaleY=h/CH;
+
+  ctx.clearRect(0,0,w,h);
+  if(bgStyle==='light'){ctx.fillStyle='#f0ece0';ctx.fillRect(0,0,w,h);}
+  else if(bgStyle==='dark'){ctx.fillStyle='#0b0a08';ctx.fillRect(0,0,w,h);}
+
+  if(bgImg&&bgVisible&&bgStyle!=='trans'){ ctx.drawImage(bgImg,0,0,w,h); }
+
+  function scPts(pts){return pts.map(p=>({x:p.x*scaleX,y:p.y*scaleY}));}
+  function renderGroup(segs){
+    const chains=chainSegments(segs);
+    chains.forEach(chain=>{
+      // Smoothing thins the dense GPS points (so the effect is visible) then re-curves them.
+      const eff=tol+smooth*2.5;
+      const simplified=eff>0?rdp(chain.pts,eff):chain.pts;
+      const passes=Math.min(4,Math.round(smooth/2.5));
+      const smoothed=passes>0?chaikin(simplified,passes):simplified;
+      const pts=scPts(smoothed);
+      if(pts.length<2)return;
+      const width=chain.w*lwMul*Math.min(scaleX,scaleY);
+      const isDash=chain.type==='alt'&&chain.color==='#c9b896';
+      if(glowA>0){
+        [[width+10,glowA*.25],[width+4,glowA*.65]].forEach(([lw,a])=>{
+          ctx.save();ctx.strokeStyle=chain.color;ctx.lineWidth=lw;ctx.lineCap='round';ctx.lineJoin='round';ctx.globalAlpha=a;ctx.setLineDash([]);
+          ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+          for(let i=1;i<pts.length-1;i++)ctx.quadraticCurveTo(pts[i].x,pts[i].y,(pts[i].x+pts[i+1].x)/2,(pts[i].y+pts[i+1].y)/2);
+          ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);ctx.stroke();ctx.restore();
+        });
+      }
+      ctx.save();ctx.strokeStyle=chain.color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';
+      ctx.globalAlpha=isDash?.87:.94;ctx.setLineDash(isDash?[width*2.4,width*1.1]:[]);
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+      for(let i=1;i<pts.length-1;i++)ctx.quadraticCurveTo(pts[i].x,pts[i].y,(pts[i].x+pts[i+1].x)/2,(pts[i].y+pts[i+1].y)/2);
+      ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);ctx.stroke();ctx.restore();
+    });
+  }
+  renderGroup(segments.filter(s=>s.type==='std'&&s.color==='#d8d4c0'));
+  renderGroup(segments.filter(s=>s.type==='alt'&&s.color==='#c9b896'));
+  renderGroup(segments.filter(s=>s.color!=='#d8d4c0'&&s.color!=='#c9b896'));
+
+  if(!isThumb){
+    if(sfPos)drawSFCanvas(ctx,sfPos.x*scaleX,sfPos.y*scaleY);
+    const seen=new Set();
+    // On-screen render: match the live DOM pin size (constant on screen) so labels
+    // don't "jump" size when toggling render. Export: size proportional to the image.
+    const us=opts.uiScale||Math.max(1,Math.min(w,h)/620);
+    labels.forEach(lb=>{
+      if(seen.has(lb.id))return;seen.add(lb.id);     // dedup so each label draws once
+      drawLabelCanvas(ctx,lb,scaleX,scaleY,us);
+    });
+    // Legend is baked only into exports; on screen the (movable) DOM legend is used,
+    // so the rendered preview never paints the legend over the track.
+    if(opts.isExport)drawLegendCanvas(ctx,w,h);
+  } else {
+    const seen=new Set();
+    labels.forEach(lb=>{
+      if(seen.has(lb.id))return;seen.add(lb.id);
+      ctx.save();ctx.fillStyle=TC[lb.type]||TC.main;
+      ctx.beginPath();ctx.arc(lb.x*scaleX,lb.y*scaleY,3,0,Math.PI*2);ctx.fill();ctx.restore();
+    });
+  }
+}
+// Draw one label as a short leader line + offset name box (matches the DOM pins; no dot).
+function drawLabelCanvas(ctx,lb,scaleX,scaleY,us){
+  const col=TC[lb.type]||TC.main;
+  const px=lb.x*scaleX, py=lb.y*scaleY;
+  const g=pinGeom(lb.dir);
+  const ex=px+g.bx*us, ey=py+g.by*us;     // box's anchored corner
+  ctx.save();
+  ctx.font=`600 ${Math.round(11*us)}px system-ui,sans-serif`;
+  const padX=7*us, bh=Math.round(17*us);
+  const tw=ctx.measureText(lb.name).width+padX*2;
+  let bx=ex, by=ey;
+  if(g.tx===-100)bx=ex-tw;
+  if(g.ty===-100)by=ey-bh;
+  // leader line from the track point to the box corner
+  ctx.strokeStyle=col;ctx.lineWidth=Math.max(1,1.4*us);ctx.globalAlpha=.8;
+  ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(ex,ey);ctx.stroke();ctx.globalAlpha=1;
+  // name box
+  ctx.fillStyle='rgba(8,8,6,.94)';rrect(ctx,bx,by,tw,bh,4*us);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.14)';ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillText(lb.name,bx+padX,by+bh/2+0.5);
+  ctx.restore();
+}
+function doRender(silent){
+  doRenderToCtx(xRe,CW,CH,false,{uiScale:liveUS()});
+  renderVis=true; panelPreview=false;
+  showRenderCanvas(true);
+  document.getElementById('btn-rv').style.display='';
+  document.getElementById('btn-rv').classList.add('on');
+  if(!silent)stEl.textContent='Rendered ✦ — 👁 to toggle';
+}
+function toggleRender(){
+  renderVis=!renderVis;
+  showRenderCanvas(renderVis);
+  document.getElementById('btn-rv').classList.toggle('on',renderVis);
+}
+
+// ── S/F ──
+function placeSF(p){
+  sfPos={x:p.x,y:p.y};refreshSFEl();
+  document.getElementById('lg-sf').style.display='flex';
+  setMode('browse');
+}
+function refreshSFEl(){
+  let el=document.getElementById('sf-el');
+  if(!sfPos){if(el)el.remove();return;}
+  if(!el){
+    el=document.createElement('div');el.id='sf-el';
+    sfLayer.appendChild(el);
+    el.addEventListener('mousedown',sfDragStart);
+    el.addEventListener('touchstart',sfDragStartT,{passive:false});
+  }
+  el.style.left=sfPos.x+'px';el.style.top=sfPos.y+'px';
+  el.innerHTML=`<svg width="18" height="26" viewBox="0 0 18 26" xmlns="http://www.w3.org/2000/svg">
+    <line x1="3" y1="1" x2="3" y2="25" stroke="#b0ac98" stroke-width="1.6" stroke-linecap="round"/>
+    <rect x="3" y="1"  width="3.5" height="3" fill="#f0ece0"/>
+    <rect x="6.5" y="1"  width="3.5" height="3" fill="#1a1a18"/>
+    <rect x="10" y="1" width="3.5" height="3" fill="#f0ece0"/>
+    <rect x="3" y="4"  width="3.5" height="3" fill="#1a1a18"/>
+    <rect x="6.5" y="4"  width="3.5" height="3" fill="#f0ece0"/>
+    <rect x="10" y="4" width="3.5" height="3" fill="#1a1a18"/>
+    <rect x="3" y="1" width="10.5" height="6" fill="none" stroke="rgba(0,0,0,.12)" stroke-width=".4"/>
+    <circle cx="3" cy="25" r="1.6" fill="#b0ac98" opacity=".5"/>
+  </svg>`;
+}
+function sfDragStart(e){
+  e.preventDefault();e.stopPropagation();sfDrag=true;
+  const mv=ev=>{const p=toCanvas(ev.clientX,ev.clientY);sfPos={x:p.x,y:p.y};refreshSFEl();};
+  const up=()=>{sfDrag=false;document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);};
+  document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+}
+function sfDragStartT(e){
+  e.preventDefault();e.stopPropagation();sfDrag=true;
+  const mv=ev=>{const t=ev.touches[0];const p=toCanvas(t.clientX,t.clientY);sfPos={x:p.x,y:p.y};refreshSFEl();};
+  const up=()=>{sfDrag=false;document.removeEventListener('touchmove',mv);document.removeEventListener('touchend',up);};
+  document.addEventListener('touchmove',mv,{passive:false});document.addEventListener('touchend',up);
+}
+function drawSFCanvas(ctx,px,py){
+  const s=15;
+  ctx.save();
+  ctx.strokeStyle='#b0ac98';ctx.lineWidth=1.5;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,py-s*1.6);ctx.stroke();
+  const fw=s*.72,fh=s*.5,fx=px,fy=py-s*1.6;
+  const cs=fw/3,rs=fh/2;
+  [[0,0,false],[1,0,true],[2,0,false],[0,1,true],[1,1,false],[2,1,true]].forEach(([cx,cy,dark])=>{
+    ctx.fillStyle=dark?'#1a1a18':'#f0ece0';ctx.fillRect(fx+cx*cs,fy+cy*rs,cs,rs);
+  });
+  ctx.strokeStyle='rgba(0,0,0,.12)';ctx.lineWidth=.4;ctx.strokeRect(fx,fy,fw,fh);
+  ctx.fillStyle='#b0ac98';ctx.globalAlpha=.45;ctx.beginPath();ctx.arc(px,py,1.8,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+// ── Labels ──
+const m2t={'lbl':'main','lbl-alt':'alt','lbl-tbd':'tbd'};
+function placeLabel(p){
+  const type=m2t[mode]||'main';
+  const lb={id:++labelId,x:p.x,y:p.y,name:type==='tbd'?'[TBD]':'Section',type,dir:'ne'};
+  labels.push(lb);renderPin(lb);refreshSidebar();openEdit(lb.id);setMode('browse');
+}
+function pinInnerHTML(lb){
+  const g=pinGeom(lb.dir);
+  return `<div class="pin-scale">`+
+    `<span class="pin-line" style="width:${g.L}px;transform:rotate(${g.rot}deg)"></span>`+
+    `<div class="pin-lbl" style="left:${g.bx}px;top:${g.by}px;transform:translate(${g.tx}%,${g.ty}%)">${esc(lb.name)}</div>`+
+  `</div>`;
+}
+function renderPin(lb){
+  if(!lb.dir)lb.dir='ne';
+  const el=document.createElement('div');
+  el.className=`pin ${lb.type}`;el.id=`pin-${lb.id}`;
+  el.style.left=lb.x+'px';el.style.top=lb.y+'px';
+  el.style.setProperty('--z',vZoom);
+  el.innerHTML=pinInnerHTML(lb);
+  // Click the dot OR the box → cycle which corner the leader points from.
+  // (Editing the name/type is done from the sidebar list.)
+  el.addEventListener('click',ev=>{ev.stopPropagation();if(!pinDrag)cycleDir(lb.id);});
+  el.addEventListener('dblclick',ev=>{ev.stopPropagation();openEdit(lb.id);});
+  el.addEventListener('mousedown',ev=>startDrag(ev,lb.id));
+  el.addEventListener('touchstart',ev=>{ev.preventDefault();startDragTouch(ev,lb.id);},{passive:false});
+  pinsEl.appendChild(el);
+}
+function refreshPin(lb){
+  const el=document.getElementById(`pin-${lb.id}`);if(!el)return;
+  el.className=`pin ${lb.type}`;el.style.left=lb.x+'px';el.style.top=lb.y+'px';
+  el.innerHTML=pinInnerHTML(lb);
+  if(lb.id===selId)el.classList.add('active');
+}
+function cycleDir(id){
+  const lb=labels.find(l=>l.id===id);if(!lb)return;
+  lb.dir=PIN_DIRS[(PIN_DIRS.indexOf(lb.dir||'ne')+1)%PIN_DIRS.length];
+  refreshPin(lb);
+  if(renderVis||panelPreview)schedLiveRender();
+}
+function startDrag(e,id){
+  e.preventDefault();e.stopPropagation();
+  const lb=labels.find(l=>l.id===id);if(!lb)return;
+  const el=document.getElementById(`pin-${id}`);
+  const sx=e.clientX, sy=e.clientY; let moved=false;
+  const mv=ev=>{
+    if(!moved && Math.hypot(ev.clientX-sx,ev.clientY-sy)<4)return; // ignore micro-jitter → keep it a click
+    moved=true; pinDrag=id;
+    const p=toCanvas(ev.clientX,ev.clientY);lb.x=p.x;lb.y=p.y;if(el){el.style.left=lb.x+'px';el.style.top=lb.y+'px';}
+  };
+  const up=()=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);if(moved)setTimeout(()=>pinDrag=null,60);};
+  document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+}
+function startDragTouch(e,id){
+  const lb=labels.find(l=>l.id===id);if(!lb)return;
+  const el=document.getElementById(`pin-${id}`);
+  const t0=e.touches[0]; const sx=t0.clientX, sy=t0.clientY; let moved=false;
+  const mv=ev=>{
+    const t=ev.touches[0];
+    if(!moved && Math.hypot(t.clientX-sx,t.clientY-sy)<6)return;
+    moved=true; pinDrag=id;
+    const p=toCanvas(t.clientX,t.clientY);lb.x=p.x;lb.y=p.y;if(el){el.style.left=lb.x+'px';el.style.top=lb.y+'px';}
+  };
+  const up=()=>{document.removeEventListener('touchmove',mv);document.removeEventListener('touchend',up);if(moved)setTimeout(()=>pinDrag=null,60);};
+  document.addEventListener('touchmove',mv,{passive:false});document.addEventListener('touchend',up);
+}
+function refreshSidebar(){
+  document.getElementById('lbl-count').textContent=labels.length;
+  document.getElementById('lbl-empty').style.display=labels.length?'none':'';
+  lblList.querySelectorAll('.lbl-row').forEach(e=>e.remove());
+  labels.forEach(lb=>{
+    const col=TC[lb.type]||TC.main;
+    const row=document.createElement('div');row.className='lbl-row';row.id=`row-${lb.id}`;
+    row.innerHTML=`<div class="lrow-dot" style="background:${col}"></div><div class="lrow-name">${esc(lb.name)}</div><div class="lrow-acts"><span class="lrow-btn" onclick="event.stopPropagation();TS.copyLabelById(${lb.id})">⎘</span><span class="lrow-btn" style="color:#7a3030" onclick="event.stopPropagation();TS.quickDelete(${lb.id})">✕</span></div>`;
+    row.addEventListener('click',()=>openEdit(lb.id));lblList.appendChild(row);
+  });
+  highlightRow(selId);
+}
+function highlightRow(id){
+  lblList.querySelectorAll('.lbl-row').forEach(r=>r.classList.remove('sel','sel-a','sel-t'));
+  if(id==null)return;
+  const lb=labels.find(l=>l.id===id);if(!lb)return;
+  const row=document.getElementById(`row-${id}`);if(!row)return;
+  row.classList.add({main:'sel',alt:'sel-a',tbd:'sel-t'}[lb.type]||'sel');
+  row.scrollIntoView({block:'nearest'});
+}
+function openEdit(id){
+  const lb=labels.find(l=>l.id===id);if(!lb)return;
+  selId=id;
+  document.getElementById('ie-name').value=lb.name==='[TBD]'||lb.name==='Section'?'':lb.name;
+  document.getElementById('ie-type').value=lb.type;
+  ieEl.style.display='block';
+  setTimeout(()=>document.getElementById('ie-name').focus(),40);
+  highlightRow(id);
+  pinsEl.querySelectorAll('.pin').forEach(p=>p.classList.remove('active'));
+  const pin=document.getElementById(`pin-${id}`);if(pin)pin.classList.add('active');
+}
+function saveLabel(){
+  const lb=labels.find(l=>l.id===selId);if(!lb)return;
+  lb.name=document.getElementById('ie-name').value.trim()||'[TBD]';
+  lb.type=document.getElementById('ie-type').value;
+  refreshPin(lb);refreshSidebar();closeEdit();
+}
+function copyLabel(){const lb=labels.find(l=>l.id===selId);if(lb)copyLabelById(lb.id);}
+function copyLabelById(id){
+  const lb=labels.find(l=>l.id===id);if(!lb)return;
+  const copy={id:++labelId,x:lb.x+20,y:lb.y+20,name:lb.name+' (copy)',type:lb.type,dir:lb.dir||'ne'};
+  labels.push(copy);renderPin(copy);refreshSidebar();openEdit(copy.id);
+}
+function deleteLabel(){quickDelete(selId);closeEdit();}
+function quickDelete(id){
+  labels=labels.filter(l=>l.id!==id);
+  const pin=document.getElementById(`pin-${id}`);if(pin)pin.remove();
+  if(selId===id)closeEdit();refreshSidebar();
+}
+function closeEdit(){
+  ieEl.style.display='none';selId=null;
+  pinsEl.querySelectorAll('.pin').forEach(p=>p.classList.remove('active'));
+  highlightRow(null);
+}
+
+// ── Legend on full canvas ──
+function drawLegendCanvas(ctx,cw,ch){
+  const hasHi=segments.some(s=>s.color!=='#d8d4c0'&&s.color!=='#c9b896');
+  const rows=[{color:'#d8d4c0',dash:false,label:'Standard lap'},{color:'#c9b896',dash:true,label:'Alternative section'}];
+  if(hasHi){const h=segments.find(s=>s.color!=='#d8d4c0'&&s.color!=='#c9b896');if(h)rows.push({color:h.color,dash:false,label:'Recolored section'});}
+  if(sfPos)rows.push({sf:true,label:'Start / Finish'});
+  const lh=rows.length*18+30,lx=cw-158,ly=ch-lh-14,lw=146;
+  ctx.save();
+  ctx.fillStyle='rgba(6,6,4,.9)';rrect(ctx,lx,ly,lw,lh,7);ctx.fill();
+  ctx.strokeStyle='#1d1b16';ctx.lineWidth=1;rrect(ctx,lx,ly,lw,lh,7);ctx.stroke();
+  ctx.font='700 9px system-ui,sans-serif';ctx.fillStyle='#4c483e';ctx.textAlign='left';
+  ctx.fillText('TRACK LEGEND',lx+10,ly+16);
+  rows.forEach((row,i)=>{
+    const ry=ly+28+i*18;
+    if(row.sf){
+      [[0,false],[1,true],[0,true],[1,false]].forEach(([cx,dark])=>{
+        ctx.fillStyle=dark?'#1a1a18':'#f0ece0';
+        ctx.fillRect(lx+10+cx*5,ry-5,5,5);ctx.fillRect(lx+10+(1-cx)*5,ry,5,5);
+      });
+    } else {
+      ctx.save();ctx.strokeStyle=row.color;ctx.lineWidth=3;ctx.lineCap='round';ctx.setLineDash(row.dash?[6,3]:[]);ctx.globalAlpha=.9;
+      ctx.beginPath();ctx.moveTo(lx+10,ry+1);ctx.lineTo(lx+34,ry+1);ctx.stroke();ctx.restore();
+    }
+    ctx.font='500 10px system-ui,sans-serif';ctx.fillStyle='#5c574c';ctx.textAlign='left';ctx.setLineDash([]);
+    ctx.fillText(row.label,lx+42,ry+5);
+  });
+  ctx.restore();
+}
+
+// ── Export ──
+function exportImg(){
+  const out=document.createElement('canvas');out.width=CW;out.height=CH;
+  const ox=out.getContext('2d');
+  // Always re-render at full resolution with the legend baked in and image-proportional labels.
+  doRenderToCtx(ox,CW,CH,false,{isExport:true,uiScale:Math.max(1,Math.min(CW,CH)/900)});
+  const a=document.createElement('a');a.href=out.toDataURL('image/png');a.download='lugnet-track.png';a.click();
+}
+
+// ── Save / Load ──
+function saveJSON(){
+  const d={v:7,CW,CH,bgStyle,hiColor,labelId,segId,sfPos:sfPos?{x:+sfPos.x.toFixed(1),y:+sfPos.y.toFixed(1)}:null,
+    segments:segments.map(s=>({id:s.id,type:s.type,color:s.color,w:s.w,pts:s.pts.map(p=>[+(p.x.toFixed(1)),+(p.y.toFixed(1))])})),
+    labels:labels.map(l=>({id:l.id,x:+l.x.toFixed(1),y:+l.y.toFixed(1),name:l.name,type:l.type,dir:l.dir||'ne'}))
+  };
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d)],{type:'application/json'}));a.download='lugnet-track.json';a.click();
+}
+function loadJSON(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      // Segments are always stored in absolute pixels.
+      segments=(d.segments||[]).map(s=>({id:s.id||++segId,type:s.type,color:s.color||(s.type==='alt'?'#c9b896':'#d8d4c0'),w:s.w||8,pts:(s.pts||[]).map(p=>({x:p[0],y:p[1]}))}));
+      // ── Canvas size ──
+      // New saves (v≥7) carry CW/CH. Legacy saves (v2/v3) don't — and in those
+      // the labels are stored as PERCENTAGES of the canvas, not pixels. Size the
+      // canvas to contain the whole track so nothing is clipped, then convert.
+      const legacy=!(d.CW&&d.CH);
+      if(!legacy){CW=d.CW;CH=d.CH;}
+      else{
+        let mx=0,my=0;
+        segments.forEach(s=>s.pts.forEach(p=>{if(p.x>mx)mx=p.x;if(p.y>my)my=p.y;}));
+        const pad=24;
+        CW=Math.max(800,Math.ceil(mx)+pad);
+        CH=Math.max(600,Math.ceil(my)+pad);
+      }
+      initCanvases();
+      // Legacy labels (and S/F) are percentages of the canvas; new ones are pixels.
+      labels=(d.labels||[]).map(l=>({
+        id:l.id,
+        x:legacy?l.x/100*CW:l.x,
+        y:legacy?l.y/100*CH:l.y,
+        name:l.name,type:l.type||'main',dir:l.dir||'ne'
+      }));
+      // Keep id counters ahead of everything we just loaded so new ids never collide.
+      segId =Math.max(d.segId ||0, segments.reduce((m,s)=>Math.max(m,s.id||0),0));
+      labelId=Math.max(d.labelId||0, labels.reduce((m,l)=>Math.max(m,l.id||0),0));
+      sfPos=d.sfPos?(legacy?{x:d.sfPos.x/100*CW,y:d.sfPos.y/100*CH}:{x:d.sfPos.x,y:d.sfPos.y}):null;
+      if(d.hiColor){hiColor=d.hiColor;document.getElementById('hi-color').value=hiColor;document.getElementById('hi-sw').style.background=hiColor;}
+      if(d.bgStyle)setStyle(d.bgStyle);
+      pinsEl.innerHTML='';labels.forEach(renderPin);
+      redrawBg();redrawTrace();refreshSidebar();refreshSFEl();resetView();
+      renderVis=false;panelPreview=false;showRenderCanvas(false);document.getElementById('btn-rv').style.display='none';
+      document.getElementById('lg-sf').style.display=sfPos?'flex':'none';
+      const hasHi=segments.some(s=>s.color!=='#d8d4c0'&&s.color!=='#c9b896');
+      if(hasHi){const h=segments.find(s=>s.color!=='#d8d4c0'&&s.color!=='#c9b896');if(h){document.getElementById('lg-hi').style.display='flex';document.getElementById('lg-hi-line').style.background=h.color;}}
+      else{document.getElementById('lg-hi').style.display='none';}
+      stEl.textContent='Session loaded — '+segments.length+' segments, '+labels.length+' labels';
+    }catch(err){alert('Could not load — invalid file.');}
+  };
+  r.readAsText(f);
+  e.target.value='';  // allow re-loading the same file again
+}
+
+// ── Helpers ──
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function rrect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+// ── Legend: draggable so it can be moved off the track ──
+function makeLegendDraggable(){
+  const lg=document.getElementById('legend');if(!lg)return;
+  const start=e=>{
+    e.preventDefault();e.stopPropagation();
+    const src=e.touches?e.touches[0]:e;
+    const par=cArea.getBoundingClientRect(), box=lg.getBoundingClientRect();
+    const offX=src.clientX-box.left, offY=src.clientY-box.top;
+    const mv=ev=>{
+      const s=ev.touches?ev.touches[0]:ev;
+      let x=s.clientX-par.left-offX, y=s.clientY-par.top-offY;
+      x=Math.max(0,Math.min(par.width-box.width,x));
+      y=Math.max(0,Math.min(par.height-box.height,y));
+      lg.style.left=x+'px';lg.style.top=y+'px';lg.style.right='auto';lg.style.bottom='auto';
+    };
+    const up=()=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',mv);document.removeEventListener('touchend',up);};
+    document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+    document.addEventListener('touchmove',mv,{passive:false});document.addEventListener('touchend',up);
+  };
+  lg.addEventListener('mousedown',start);
+  lg.addEventListener('touchstart',start,{passive:false});
+  // tiny "drag" affordance
+  if(!lg.querySelector('.lg-drag')){const d=document.createElement('div');d.className='lg-drag';d.textContent='⠿ drag to move';lg.appendChild(d);}
+}
+
+// ── Boot ──
+initCanvases();resetView();setMode('browse');makeLegendDraggable();
+
+// ── Public API used by the Track Studio markup ──
+window.TS={
+  triggerFile, loadBg, loadFromRouteArt, toggleBg, setStyle,
+  setMode, zoomStep, resetView, setStroke, setHiColor, setEraseR,
+  undo, clearTraces, openRenderPanel, toggleRender, exportImg,
+  saveJSON, loadJSON, saveLabel, copyLabel, copyLabelById,
+  deleteLabel, quickDelete, closeEdit, rpV, schedLiveRender,
+  doRender, closeRenderPanel
+};
+})();
 </script>
 </body>
 </html>
