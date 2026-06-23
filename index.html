@@ -321,7 +321,8 @@ canvas#overlay{position:absolute;top:0;left:0;}
 #page-studio #sw,#page-studio #er-sw{width:46px;cursor:pointer;accent-color:var(--accent);}
 #page-studio .sw-val{font-size:10px;color:var(--faint3);min-width:16px;}
 #page-studio #hi-color{width:22px;height:22px;border-radius:4px;border:1px solid var(--bctrl);padding:1px;cursor:pointer;background:none;}
-#page-studio #zoom-val{font-size:10px;color:var(--faint3);min-width:34px;text-align:center;}
+#page-studio .zoom-inp{width:48px;font-size:11px;color:var(--txt2);text-align:center;background:var(--surface);border:1px solid var(--bctrl);border-radius:5px;padding:4px 2px;font-family:'Geist',sans-serif;}
+#page-studio .zoom-inp:focus{outline:none;border-color:var(--accent);}
 #page-studio #main{display:flex;flex:1;overflow:hidden;min-height:0;}
 #page-studio #sidebar{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
 #page-studio #sb-head{padding:8px 11px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--faint3);letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;}
@@ -355,13 +356,12 @@ canvas#overlay{position:absolute;top:0;left:0;}
 #page-studio #c-live{z-index:4;}
 #page-studio #pins{position:absolute;top:0;left:0;z-index:5;pointer-events:none;}
 #page-studio #sf-layer{position:absolute;top:0;left:0;z-index:6;pointer-events:none;}
-/* Leader-line label: tiny anchor dot on the track + short line to an offset name box */
-#page-studio .pin{position:absolute;--z:1;width:0;height:0;}
-#page-studio .pin-scale{position:absolute;left:0;top:0;transform:scale(calc(1/var(--z)));transform-origin:0 0;}
-#page-studio .pin-dot{position:absolute;left:0;top:0;width:8px;height:8px;border-radius:50%;background:currentColor;border:1.5px solid rgba(8,8,6,.85);transform:translate(-50%,-50%);box-shadow:0 0 4px currentColor;pointer-events:all;cursor:pointer;transition:transform .12s;}
-#page-studio .pin-line{position:absolute;left:0;top:0;height:1.5px;background:currentColor;opacity:.75;transform-origin:0 0;pointer-events:none;}
-#page-studio .pin-lbl{position:absolute;left:0;top:0;background:rgba(8,8,6,.94);border:1px solid rgba(255,255,255,.12);border-radius:4px;padding:2px 7px;font-size:10px;white-space:nowrap;font-weight:600;letter-spacing:.03em;color:currentColor;pointer-events:all;cursor:pointer;}
-#page-studio .pin:hover .pin-dot,#page-studio .pin.active .pin-dot{transform:translate(-50%,-50%) scale(1.5);}
+/* Leader-line label: short line to an offset name box. Sized in CANVAS px so it
+   scales with the track/zoom — editing, render and export all match (no size jump). */
+#page-studio .pin{position:absolute;width:0;height:0;}
+#page-studio .pin-scale{position:absolute;left:0;top:0;}
+#page-studio .pin-line{position:absolute;left:0;top:0;background:currentColor;opacity:.75;transform-origin:0 0;pointer-events:none;}
+#page-studio .pin-lbl{position:absolute;left:0;top:0;background:rgba(8,8,6,.94);border:1px solid rgba(255,255,255,.12);white-space:nowrap;font-weight:600;letter-spacing:.03em;color:currentColor;pointer-events:all;cursor:pointer;}
 #page-studio .pin.active .pin-lbl{border-color:currentColor;box-shadow:0 0 10px rgba(0,0,0,.55);}
 #page-studio .pin.main{color:#d8d4c0;}
 #page-studio .pin.alt{color:#c9b896;}
@@ -811,7 +811,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
       <button class="btn" onclick="TS.zoomStep(1.25)" title="Zoom in">＋</button>
       <button class="btn" onclick="TS.zoomStep(0.8)"  title="Zoom out">－</button>
       <button class="btn" onclick="TS.resetView()"    title="Fit to view">⊡ Fit</button>
-      <button class="btn" id="zoom-val" onclick="TS.toggleZoom()" title="Click to toggle 100% / Fit">100%</button>
+      <input id="zoom-val" class="zoom-inp" value="100%" title="Type a zoom % and press Enter (or use ⊡ Fit)" onchange="TS.setZoomPct(this.value)" onkeydown="if(event.key==='Enter')event.target.blur()">
     </div>
 
     <div class="ts-group">
@@ -856,7 +856,8 @@ canvas#overlay{position:absolute;top:0;left:0;}
       <span class="ts-glabel">Output</span>
       <button class="btn go" onclick="TS.openRenderPanel()">✦ Render</button>
       <button class="btn" id="btn-rv" onclick="TS.toggleRender()" style="display:none" title="Toggle render view">👁</button>
-      <button class="btn" onclick="TS.exportImg()" title="Export PNG">🖼</button>
+      <button class="btn" onclick="TS.exportImg()" title="Export PNG (raster)">🖼 PNG</button>
+      <button class="btn" onclick="TS.exportSVG()" title="Export SVG (vector — scalable for print)">⬡ SVG</button>
       <button class="btn" onclick="TS.saveJSON()" title="Save session">💾</button>
       <button class="btn" onclick="TS.triggerFile('f-json')" title="Load session">📂</button>
       <input type="file" id="f-json" accept=".json" style="display:none" onchange="TS.loadJSON(event)">
@@ -908,7 +909,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
         <div class="rp-row"><label>Tolerance</label><input type="range" id="rp-tol"    min="0" max="15" step="0.5" value="2.5" oninput="TS.rpV('rp-tol-v',this.value);TS.schedLiveRender()"><span id="rp-tol-v">2.5</span></div>
         <div class="rp-row"><label>Glow</label>     <input type="range" id="rp-glow"   min="0" max="1"  step="0.05" value="0.4" oninput="TS.rpV('rp-glow-v',this.value);TS.schedLiveRender()"><span id="rp-glow-v">0.4</span></div>
         <div class="rp-row"><label>Width ×</label>  <input type="range" id="rp-lw"     min="0.4" max="2.5" step="0.1" value="1" oninput="TS.rpV('rp-lw-v',this.value);TS.schedLiveRender()"><span id="rp-lw-v">1</span></div>
-        <div class="rp-row"><label>Label size</label><input type="range" id="rp-lblsize" min="0.6" max="3.5" step="0.1" value="1.6" oninput="TS.setLabelScale(this.value)"><span id="rp-lblsize-v">1.6</span></div>
+        <div class="rp-row"><label>Label size</label><input type="range" id="rp-lblsize" min="0.4" max="3" step="0.1" value="1" oninput="TS.setLabelScale(this.value)"><span id="rp-lblsize-v">1.0</span></div>
         <div class="rp-preview"><canvas id="rp-canvas" width="196" height="88"></canvas></div>
         <div class="rp-hint">Live preview also shown full-size on the canvas</div>
         <div class="rp-row" style="margin-top:4px"><label>Export res</label>
@@ -921,7 +922,8 @@ canvas#overlay{position:absolute;top:0;left:0;}
         </div>
         <div class="rp-btns">
           <button class="btn go" onclick="TS.doRender();TS.closeRenderPanel()">✦ Apply</button>
-          <button class="btn" onclick="TS.exportImg()" title="Export PNG at the chosen resolution">🖼 Export</button>
+          <button class="btn" onclick="TS.exportImg()" title="Export PNG at the chosen resolution">🖼 PNG</button>
+          <button class="btn" onclick="TS.exportSVG()" title="Export scalable vector SVG">⬡ SVG</button>
           <button class="btn" onclick="TS.closeRenderPanel()">Done</button>
         </div>
       </div>
@@ -3501,7 +3503,7 @@ const TC={main:'#d8d4c0', alt:'#c9b896', tbd:'#7aaa7a'};
 // Light ("black on white") theme ink — used when bgStyle==='light'.
 const TC_LIGHT={main:'#161310', alt:'#5b4a22', tbd:'#2f5a2f'};
 let hiName='Recolored section';   // editable legend name for the recoloured colour
-let labelScale=1.6;               // label/legend size multiplier (same in preview AND export → WYSIWYG)
+let labelScale=1.0;               // label/legend size multiplier (same in preview AND export → WYSIWYG)
 let exportRes=2;                  // export resolution multiplier (1×/2×/4× …) for large-format printing
 // Segment categorisation (by type+canonical colour, independent of display theme).
 function isStdSeg(s){return s.type==='std'&&s.color==='#d8d4c0';}
@@ -3525,7 +3527,7 @@ function initCanvases(){
 }
 function applyTransform(){
   vp.style.transform=`translate(${vPanX}px,${vPanY}px) scale(${vZoom})`;
-  document.getElementById('zoom-val').textContent=Math.round(vZoom*100)+'%';
+  {const zv=document.getElementById('zoom-val'); if(zv&&document.activeElement!==zv) zv.value=Math.round(vZoom*100)+'%';}
   document.querySelectorAll('#page-studio .pin').forEach(p=>p.style.setProperty('--z',vZoom));
 }
 function resetView(){
@@ -3625,10 +3627,18 @@ function setStroke(v){strokeW=+v;document.getElementById('sw-val').textContent=v
 function setHiColor(v){hiColor=v;document.getElementById('hi-sw').style.background=v;}
 function setEraseR(v){eraseR=+v;document.getElementById('er-val').textContent=v;updateEraserCursor();}
 function setHiName(v){hiName=v||'Recolored section';refreshLegendDom();if(renderVis||panelPreview)schedLiveRender();}
-function setLabelScale(v){labelScale=+v;rpV('rp-lblsize-v',(+v).toFixed(1));if(panelPreview||renderVis)schedLiveRender();}
+function setLabelScale(v){labelScale=+v;rpV('rp-lblsize-v',(+v).toFixed(1));labels.forEach(refreshPin);if(panelPreview||renderVis)schedLiveRender();}
 function setExportRes(v){exportRes=+v;}
 // 100% ⇄ Fit toggle for the zoom readout
 function zoomTo100(){const aw=cArea.clientWidth,ah=cArea.clientHeight;if(!aw||!ah)return;vZoom=1;vPanX=(aw-CW)/2;vPanY=(ah-CH)/2;applyTransform();}
+function setZoomPct(v){
+  const pct=parseFloat(String(v).replace('%',''));
+  const aw=cArea.clientWidth,ah=cArea.clientHeight;
+  if(!isFinite(pct)||pct<=0||!aw){applyTransform();return;}
+  const nz=Math.max(0.05,Math.min(20,pct/100)), cx=aw/2, cy=ah/2;
+  vPanX=cx-(cx-vPanX)*(nz/vZoom); vPanY=cy-(cy-vPanY)*(nz/vZoom);
+  vZoom=nz; applyTransform();
+}
 function toggleZoom(){ if(Math.abs(vZoom-1)>0.01) zoomTo100(); else resetView(); }
 
 // ── BG Image ──
@@ -4085,10 +4095,11 @@ function placeLabel(p){
   labels.push(lb);renderPin(lb);refreshSidebar();openEdit(lb.id);setMode('browse');
 }
 function pinInnerHTML(lb){
-  const g=pinGeom(lb.dir);
+  const g=pinGeom(lb.dir), k=labelScale;   // canvas-px geometry scaled by the label-size control
   return `<div class="pin-scale">`+
-    `<span class="pin-line" style="width:${g.L}px;transform:rotate(${g.rot}deg)"></span>`+
-    `<div class="pin-lbl" style="left:${g.bx}px;top:${g.by}px;transform:translate(${g.tx}%,${g.ty}%)">${esc(lb.name)}</div>`+
+    `<span class="pin-line" style="width:${g.L*k}px;height:${1.4*k}px;transform:rotate(${g.rot}deg)"></span>`+
+    `<div class="pin-lbl" style="left:${g.bx*k}px;top:${g.by*k}px;transform:translate(${g.tx}%,${g.ty}%);`+
+      `font-size:${11*k}px;padding:${2*k}px ${7*k}px;border-radius:${4*k}px;border-width:${Math.max(1,k)}px">${esc(lb.name)}</div>`+
   `</div>`;
 }
 function renderPin(lb){
@@ -4242,16 +4253,131 @@ function drawLegendCanvas(ctx,w,h){
   ctx.restore();
 }
 
+// Bounding box (canvas px) of everything that gets drawn — track, labels, S/F, legend —
+// so exports can crop away empty canvas (e.g. a screenshot-traced track sitting in a corner).
+function contentBBox(){
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  const add=(x,y)=>{if(x<x0)x0=x;if(y<y0)y0=y;if(x>x1)x1=x;if(y>y1)y1=y;};
+  segments.forEach(s=>s.pts.forEach(p=>add(p.x,p.y)));
+  const k=labelScale;
+  xRe.font=`600 ${Math.round(11*k)}px system-ui,sans-serif`;
+  labels.forEach(lb=>{
+    add(lb.x,lb.y);
+    const g=pinGeom(lb.dir);
+    const ex=lb.x+g.bx*k, ey=lb.y+g.by*k;
+    const tw=xRe.measureText(lb.name).width+14*k, bh=17*k;
+    let bx=ex,by=ey; if(g.tx===-100)bx=ex-tw; if(g.ty===-100)by=ey-bh;
+    add(bx,by); add(bx+tw,by+bh);
+  });
+  if(sfPos){add(sfPos.x-22,sfPos.y-28);add(sfPos.x+22,sfPos.y+6);}
+  const lg=document.getElementById('legend'),lr=lg.getBoundingClientRect();
+  const tl=toCanvas(lr.left,lr.top), br=toCanvas(lr.right,lr.bottom);
+  add(tl.x,tl.y); add(br.x,br.y);
+  if(!isFinite(x0))return {x:0,y:0,w:CW,h:CH};
+  const padX=(x1-x0)*0.04+14*k, padY=(y1-y0)*0.04+14*k;
+  x0=Math.max(0,x0-padX); y0=Math.max(0,y0-padY);
+  x1=Math.min(CW,x1+padX); y1=Math.min(CH,y1+padY);
+  return {x:x0,y:y0,w:Math.max(1,x1-x0),h:Math.max(1,y1-y0)};
+}
+
 // ── Export ──
 function exportImg(){
   const r=Math.max(1,exportRes|0);
-  const out=document.createElement('canvas');out.width=Math.round(CW*r);out.height=Math.round(CH*r);
-  const ox=out.getContext('2d');
-  // Re-render at the chosen resolution; identical composition to the on-screen frame, plus baked legend.
-  doRenderToCtx(ox,out.width,out.height,false,{isExport:true});
+  // If a background image is shown, the image defines the frame → export the whole canvas.
+  // Otherwise crop tight to the drawn content so there's no empty margin.
+  const crop = !(bgImg&&bgVisible&&bgStyle!=='trans');
+  const bb = crop ? contentBBox() : {x:0,y:0,w:CW,h:CH};
+  const full=document.createElement('canvas'); full.width=Math.round(CW*r); full.height=Math.round(CH*r);
+  doRenderToCtx(full.getContext('2d'),full.width,full.height,false,{isExport:true});
+  const out=document.createElement('canvas'); out.width=Math.round(bb.w*r); out.height=Math.round(bb.h*r);
+  out.getContext('2d').drawImage(full, bb.x*r, bb.y*r, bb.w*r, bb.h*r, 0,0, out.width,out.height);
   const a=document.createElement('a');a.href=out.toDataURL('image/png');
   a.download=`lugnet-track-${out.width}x${out.height}.png`;a.click();
   stEl.textContent=`Exported ${out.width}×${out.height} PNG`;
+}
+
+// ── SVG export (vector) ──
+function svgF(n){return Math.round(n*10)/10;}
+function svgPathD(pts){
+  if(pts.length<2)return '';
+  let d=`M ${svgF(pts[0].x)} ${svgF(pts[0].y)}`;
+  for(let i=1;i<pts.length-1;i++)d+=` Q ${svgF(pts[i].x)} ${svgF(pts[i].y)} ${svgF((pts[i].x+pts[i+1].x)/2)} ${svgF((pts[i].y+pts[i+1].y)/2)}`;
+  d+=` L ${svgF(pts[pts.length-1].x)} ${svgF(pts[pts.length-1].y)}`;
+  return d;
+}
+function bgDataURL(){const c=document.createElement('canvas');c.width=CW;c.height=CH;c.getContext('2d').drawImage(bgImg,0,0,CW,CH);return c.toDataURL('image/png');}
+function svgSF(px,py){
+  const s=15; let o=`<line x1="${svgF(px)}" y1="${svgF(py)}" x2="${svgF(px)}" y2="${svgF(py-s*1.6)}" stroke="#b0ac98" stroke-width="1.5" stroke-linecap="round"/>`;
+  const fw=s*.72,fh=s*.5,fx=px,fy=py-s*1.6,cs=fw/3,rs=fh/2;
+  [[0,0,0],[1,0,1],[2,0,0],[0,1,1],[1,1,0],[2,1,1]].forEach(([cx,cy,dk])=>{o+=`<rect x="${svgF(fx+cx*cs)}" y="${svgF(fy+cy*rs)}" width="${svgF(cs)}" height="${svgF(rs)}" fill="${dk?'#1a1a18':'#f0ece0'}"/>`;});
+  return o;
+}
+function svgLabel(lb,k){
+  const col=labelInk(lb.type), light=bgStyle==='light';
+  const g=pinGeom(lb.dir), px=lb.x, py=lb.y, ex=px+g.bx*k, ey=py+g.by*k;
+  xRe.font=`600 ${Math.round(11*k)}px system-ui,sans-serif`;
+  const padX=7*k, bh=17*k, tw=xRe.measureText(lb.name).width+padX*2;
+  let bx=ex,by=ey; if(g.tx===-100)bx=ex-tw; if(g.ty===-100)by=ey-bh;
+  return `<line x1="${svgF(px)}" y1="${svgF(py)}" x2="${svgF(ex)}" y2="${svgF(ey)}" stroke="${col}" stroke-width="${svgF(Math.max(1,1.4*k))}" stroke-opacity="0.8"/>`
+    +`<rect x="${svgF(bx)}" y="${svgF(by)}" width="${svgF(tw)}" height="${svgF(bh)}" rx="${svgF(4*k)}" fill="${light?'#ffffff':'#080806'}" fill-opacity="${light?0.95:0.94}" stroke="${light?'#000':'#fff'}" stroke-opacity="${light?0.15:0.14}"/>`
+    +`<text x="${svgF(bx+padX)}" y="${svgF(by+bh/2)}" dominant-baseline="central" font-size="${svgF(11*k)}" font-weight="600" fill="${col}">${esc(lb.name)}</text>`;
+}
+function svgLegend(){
+  const light=bgStyle==='light', hseg=segments.find(isHiSeg);
+  const rows=[{color:light?TC_LIGHT.main:'#d8d4c0',dash:false,label:'Standard lap'},{color:light?TC_LIGHT.alt:'#c9b896',dash:true,label:'Alternative section'}];
+  if(hseg)rows.push({color:hseg.color,dash:false,label:hiName||'Recolored section'});
+  if(sfPos)rows.push({sf:true,label:'Start / Finish'});
+  const lg=document.getElementById('legend'),lr=lg.getBoundingClientRect();
+  const tl=toCanvas(lr.left,lr.top), lw=lr.width/vZoom, s=lw/146, lh=(rows.length*18+30)*s, lx=tl.x, ly=tl.y;
+  let o=`<rect x="${svgF(lx)}" y="${svgF(ly)}" width="${svgF(lw)}" height="${svgF(lh)}" rx="${svgF(7*s)}" fill="${light?'#ffffff':'#060604'}" fill-opacity="${light?0.93:0.9}" stroke="${light?'#000':'#1d1b16'}" stroke-opacity="${light?0.15:1}"/>`;
+  o+=`<text x="${svgF(lx+10*s)}" y="${svgF(ly+16*s)}" font-size="${svgF(9*s)}" font-weight="700" fill="${light?'#6a6256':'#4c483e'}">TRACK LEGEND</text>`;
+  rows.forEach((row,i)=>{const ry=ly+28*s+i*18*s;
+    if(row.sf){const c=5*s,sq=(xx,yy,dk)=>`<rect x="${svgF(lx+10*s+xx)}" y="${svgF(ry+yy)}" width="${svgF(c)}" height="${svgF(c)}" fill="${dk?'#1a1a18':(light?'#e6e2d8':'#f0ece0')}"/>`;
+      o+=sq(0,-c,0)+sq(c,-c,1)+sq(0,0,1)+sq(c,0,0);
+    } else {
+      o+=`<line x1="${svgF(lx+10*s)}" y1="${svgF(ry+s)}" x2="${svgF(lx+34*s)}" y2="${svgF(ry+s)}" stroke="${row.color}" stroke-width="${svgF(3*s)}" stroke-linecap="round" stroke-opacity="0.92"${row.dash?` stroke-dasharray="${svgF(6*s)} ${svgF(3*s)}"`:''}/>`;
+    }
+    o+=`<text x="${svgF(lx+42*s)}" y="${svgF(ry+5*s)}" font-size="${svgF(10*s)}" font-weight="500" fill="${light?'#33302a':'#5c574c'}">${esc(row.label)}</text>`;
+  });
+  return o;
+}
+function buildSVG(){
+  const smooth=+document.getElementById('rp-smooth').value, tol=+document.getElementById('rp-tol').value;
+  const glowA=+document.getElementById('rp-glow').value, lwMul=+document.getElementById('rp-lw').value;
+  const crop=!(bgImg&&bgVisible&&bgStyle!=='trans');
+  const bb=crop?contentBBox():{x:0,y:0,w:CW,h:CH};
+  const light=bgStyle==='light';
+  let body='';
+  if(bgStyle==='light')body+=`<rect x="${svgF(bb.x)}" y="${svgF(bb.y)}" width="${svgF(bb.w)}" height="${svgF(bb.h)}" fill="#ffffff"/>`;
+  else if(bgStyle==='dark')body+=`<rect x="${svgF(bb.x)}" y="${svgF(bb.y)}" width="${svgF(bb.w)}" height="${svgF(bb.h)}" fill="#0b0a08"/>`;
+  if(bgImg&&bgVisible&&bgStyle!=='trans')body+=`<image x="0" y="0" width="${CW}" height="${CH}" preserveAspectRatio="none" href="${bgDataURL()}"/>`;
+  function emit(segs){
+    chainSegments(segs).forEach(chain=>{
+      const eff=tol+smooth*2.5, simp=eff>0?rdp(chain.pts,eff):chain.pts;
+      const passes=Math.min(4,Math.round(smooth/2.5)), sm=passes>0?chaikin(simp,passes):simp;
+      if(sm.length<2)return;
+      const col=dispColor(chain), w=chain.w*lwMul, dash=isAltSeg(chain), d=svgPathD(sm);
+      if(glowA>0){
+        body+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="${svgF(w+10)}" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="${(glowA*.25).toFixed(2)}"/>`;
+        body+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="${svgF(w+4)}" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="${(glowA*.65).toFixed(2)}"/>`;
+      }
+      body+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="${svgF(w)}" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="${dash?0.87:0.94}"${dash?` stroke-dasharray="${svgF(w*2.4)} ${svgF(w*1.1)}"`:''}/>`;
+    });
+  }
+  emit(segments.filter(isStdSeg)); emit(segments.filter(isAltSeg)); emit(segments.filter(isHiSeg));
+  if(sfPos)body+=svgSF(sfPos.x,sfPos.y);
+  const seen=new Set(), k=labelScale;
+  labels.forEach(lb=>{if(seen.has(lb.id))return;seen.add(lb.id);body+=svgLabel(lb,k);});
+  body+=svgLegend();
+  const W=svgF(bb.w),H=svgF(bb.h);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="${svgF(bb.x)} ${svgF(bb.y)} ${W} ${H}">${body}</svg>`;
+}
+function exportSVG(){
+  const svg=buildSVG();
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}));
+  a.download='lugnet-track.svg';a.click();
+  stEl.textContent='Exported SVG (vector)';
 }
 
 // ── Save / Load ──
@@ -4349,9 +4475,9 @@ initCanvases();resetView();setMode('browse');makeLegendDraggable();refreshLegend
 // ── Public API used by the Track Studio markup ──
 window.TS={
   triggerFile, loadBg, loadFromRouteArt, toggleBg, setStyle,
-  setMode, zoomStep, resetView, zoomTo100, toggleZoom, setStroke, setHiColor, setEraseR,
+  setMode, zoomStep, resetView, zoomTo100, toggleZoom, setZoomPct, setStroke, setHiColor, setEraseR,
   setHiName, setLabelScale, setExportRes,
-  undo, clearTraces, openRenderPanel, toggleRender, exportImg,
+  undo, clearTraces, openRenderPanel, toggleRender, exportImg, exportSVG,
   saveJSON, loadJSON, saveLabel, copyLabel, copyLabelById,
   deleteLabel, quickDelete, closeEdit, rpV, schedLiveRender,
   doRender, closeRenderPanel
