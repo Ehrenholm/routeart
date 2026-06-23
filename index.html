@@ -393,6 +393,19 @@ canvas#overlay{position:absolute;top:0;left:0;}
 #page-studio .lg:last-child{margin-bottom:0;}
 #page-studio .lg-line{width:22px;height:3px;border-radius:1.5px;flex-shrink:0;}
 #page-studio .lg-dash{width:22px;height:0;border-top:3px dashed #c9b896;flex-shrink:0;}
+/* recolor legend-name input */
+#page-studio .ts-name{width:96px;background:var(--surface);border:1px solid var(--bctrl);border-radius:5px;color:var(--txt2);font-size:11px;padding:4px 7px;font-family:'Geist',sans-serif;}
+#page-studio .ts-name:focus{outline:none;border-color:var(--accent);}
+#page-studio .rp-row select{background:var(--surface);border:1px solid var(--bctrl);border-radius:5px;color:var(--txt2);font-size:10px;padding:3px 5px;cursor:pointer;}
+/* "black on white" (light) theme — dark ink for the on-screen DOM pins + legend */
+#page-studio.light-ink .pin.main{color:#161310;}
+#page-studio.light-ink .pin.alt{color:#5b4a22;}
+#page-studio.light-ink .pin.tbd{color:#2f5a2f;}
+#page-studio.light-ink .pin-lbl{background:rgba(255,255,255,.95);border-color:rgba(0,0,0,.14);}
+#page-studio.light-ink #legend{background:rgba(255,255,255,.93);border-color:rgba(0,0,0,.15);}
+#page-studio.light-ink #legend #lg-title{color:#6a6256;}
+#page-studio.light-ink #legend .lg{color:#33302a;}
+#page-studio.light-ink #legend .lg-drag{color:#9a9385;}
 </style>
 </head>
 <body>
@@ -797,8 +810,8 @@ canvas#overlay{position:absolute;top:0;left:0;}
       <button class="btn" id="btn-pan" onclick="TS.setMode('pan')" title="Pan (or hold Space+drag)">✥</button>
       <button class="btn" onclick="TS.zoomStep(1.25)" title="Zoom in">＋</button>
       <button class="btn" onclick="TS.zoomStep(0.8)"  title="Zoom out">－</button>
-      <button class="btn" onclick="TS.resetView()"    title="Fit to view">⊡</button>
-      <span id="zoom-val">100%</span>
+      <button class="btn" onclick="TS.resetView()"    title="Fit to view">⊡ Fit</button>
+      <button class="btn" id="zoom-val" onclick="TS.toggleZoom()" title="Click to toggle 100% / Fit">100%</button>
     </div>
 
     <div class="ts-group">
@@ -815,6 +828,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
       <span class="ts-glabel">Color</span>
       <button class="btn" id="btn-hi" onclick="TS.setMode('hi')"><span id="hi-sw" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#9090d8;margin-right:3px;vertical-align:middle"></span>Recolor</button>
       <input type="color" id="hi-color" value="#9090d8" oninput="TS.setHiColor(this.value)">
+      <input type="text" id="hi-name" class="ts-name" placeholder="legend name…" title="Name shown in the legend for the recolored section" oninput="TS.setHiName(this.value)">
     </div>
 
     <div class="ts-group">
@@ -894,10 +908,20 @@ canvas#overlay{position:absolute;top:0;left:0;}
         <div class="rp-row"><label>Tolerance</label><input type="range" id="rp-tol"    min="0" max="15" step="0.5" value="2.5" oninput="TS.rpV('rp-tol-v',this.value);TS.schedLiveRender()"><span id="rp-tol-v">2.5</span></div>
         <div class="rp-row"><label>Glow</label>     <input type="range" id="rp-glow"   min="0" max="1"  step="0.05" value="0.4" oninput="TS.rpV('rp-glow-v',this.value);TS.schedLiveRender()"><span id="rp-glow-v">0.4</span></div>
         <div class="rp-row"><label>Width ×</label>  <input type="range" id="rp-lw"     min="0.4" max="2.5" step="0.1" value="1" oninput="TS.rpV('rp-lw-v',this.value);TS.schedLiveRender()"><span id="rp-lw-v">1</span></div>
+        <div class="rp-row"><label>Label size</label><input type="range" id="rp-lblsize" min="0.6" max="3.5" step="0.1" value="1.6" oninput="TS.setLabelScale(this.value)"><span id="rp-lblsize-v">1.6</span></div>
         <div class="rp-preview"><canvas id="rp-canvas" width="196" height="88"></canvas></div>
         <div class="rp-hint">Live preview also shown full-size on the canvas</div>
+        <div class="rp-row" style="margin-top:4px"><label>Export res</label>
+          <select id="rp-res" onchange="TS.setExportRes(this.value)" style="flex:1">
+            <option value="1">1× (screen)</option>
+            <option value="2" selected>2× (sharp)</option>
+            <option value="4">4× (print)</option>
+            <option value="6">6× (large format)</option>
+          </select>
+        </div>
         <div class="rp-btns">
           <button class="btn go" onclick="TS.doRender();TS.closeRenderPanel()">✦ Apply</button>
+          <button class="btn" onclick="TS.exportImg()" title="Export PNG at the chosen resolution">🖼 Export</button>
           <button class="btn" onclick="TS.closeRenderPanel()">Done</button>
         </div>
       </div>
@@ -3474,6 +3498,23 @@ const rpCanv = document.getElementById('rp-canvas');
 const rpCtx  = rpCanv.getContext('2d');
 const xBg=cBg.getContext('2d'), xTr=cTr.getContext('2d'), xRe=cRe.getContext('2d'), xLi=cLi.getContext('2d');
 const TC={main:'#d8d4c0', alt:'#c9b896', tbd:'#7aaa7a'};
+// Light ("black on white") theme ink — used when bgStyle==='light'.
+const TC_LIGHT={main:'#161310', alt:'#5b4a22', tbd:'#2f5a2f'};
+let hiName='Recolored section';   // editable legend name for the recoloured colour
+let labelScale=1.6;               // label/legend size multiplier (same in preview AND export → WYSIWYG)
+let exportRes=2;                  // export resolution multiplier (1×/2×/4× …) for large-format printing
+// Segment categorisation (by type+canonical colour, independent of display theme).
+function isStdSeg(s){return s.type==='std'&&s.color==='#d8d4c0';}
+function isAltSeg(s){return s.type==='alt'&&s.color==='#c9b896';}
+function isHiSeg(s){return s.color!=='#d8d4c0'&&s.color!=='#c9b896';}
+// Display colour for a segment given the current theme (recoloured keeps its custom colour).
+function dispColor(s){
+  if(bgStyle!=='light')return s.color;
+  if(isStdSeg(s))return TC_LIGHT.main;
+  if(isAltSeg(s))return TC_LIGHT.alt;
+  return s.color;
+}
+function labelInk(type){return bgStyle==='light'?(TC_LIGHT[type]||TC_LIGHT.main):(TC[type]||TC.main);}
 
 // ── Init / Resize ──
 function initCanvases(){
@@ -3538,9 +3579,11 @@ function doPinch(e){
 // ── Style toggle ──
 function setStyle(s){
   bgStyle=s;
-  cArea.style.background=s==='light'?'#f0ece0':s==='trans'?'repeating-conic-gradient(#1a1813 0% 25%,#141209 0% 50%) 0 0/16px 16px':'#0b0a08';
+  cArea.style.background=s==='light'?'#ffffff':s==='trans'?'repeating-conic-gradient(#1a1813 0% 25%,#141209 0% 50%) 0 0/16px 16px':'#0b0a08';
   ['dark','light','trans'].forEach(k=>document.getElementById('sty-'+k).classList.toggle('on',k===s));
-  redrawBg();
+  document.getElementById('page-studio').classList.toggle('light-ink', s==='light'); // dark ink on white for pins/legend
+  redrawBg(); redrawTrace();
+  if(renderVis||panelPreview)doRenderToCtx(xRe,CW,CH,false);
 }
 
 // ── Mode ──
@@ -3581,6 +3624,12 @@ function updateEraserCursor(){
 function setStroke(v){strokeW=+v;document.getElementById('sw-val').textContent=v;}
 function setHiColor(v){hiColor=v;document.getElementById('hi-sw').style.background=v;}
 function setEraseR(v){eraseR=+v;document.getElementById('er-val').textContent=v;updateEraserCursor();}
+function setHiName(v){hiName=v||'Recolored section';refreshLegendDom();if(renderVis||panelPreview)schedLiveRender();}
+function setLabelScale(v){labelScale=+v;rpV('rp-lblsize-v',(+v).toFixed(1));if(panelPreview||renderVis)schedLiveRender();}
+function setExportRes(v){exportRes=+v;}
+// 100% ⇄ Fit toggle for the zoom readout
+function zoomTo100(){const aw=cArea.clientWidth,ah=cArea.clientHeight;if(!aw||!ah)return;vZoom=1;vPanX=(aw-CW)/2;vPanY=(ah-CH)/2;applyTransform();}
+function toggleZoom(){ if(Math.abs(vZoom-1)>0.01) zoomTo100(); else resetView(); }
 
 // ── BG Image ──
 function triggerFile(id){document.getElementById(id).click();}
@@ -3692,39 +3741,56 @@ function erasePointsNear(p,radius){
     if(run.length>2)out.push({...seg,id:++segId,pts:run});
   }
   segments=out;
-  xTr.clearRect(0,0,CW,CH);drawAllSegments(xTr);
+  redrawTrace();
 }
 
 // ── Recolor — preserves all points, only changes colour ──
+// Runs are split per-point but each run SHARES its boundary point with the next
+// (overlap by 1) so adjacent strokes connect with no gaps, and coalesceSegments()
+// re-merges same-colour neighbours so the segment list never bloats. drawStroke
+// also renders 1-point runs as dots — together this stops recoloured bits from
+// vanishing when the brush hits sparse/isolated points (e.g. when zoomed in).
 function recolorNear(p,radius,color){
   const r2=radius*radius;
   const out=[];
   for(const seg of segments){
+    const pts=seg.pts; if(!pts.length)continue;
+    const cols=pts.map(pt=>((pt.x-p.x)**2+(pt.y-p.y)**2<r2)?color:seg.color);
     let i=0;
-    while(i<seg.pts.length){
-      const isHit=pt=>(pt.x-p.x)**2+(pt.y-p.y)**2<r2;
-      const h=isHit(seg.pts[i]);
-      let j=i;
-      while(j<seg.pts.length&&isHit(seg.pts[j])===h)j++;
-      const run=seg.pts.slice(i,j);
-      if(run.length>0){
-        out.push({...seg,id:++segId,pts:run,color:h?color:seg.color});
-      }
+    while(i<pts.length){
+      let j=i+1;
+      while(j<pts.length&&cols[j]===cols[i])j++;
+      const run=pts.slice(i, Math.min(pts.length, j+1)); // +1 = share boundary point → no gap
+      out.push({...seg,id:++segId,pts:run,color:cols[i]});
       i=j;
     }
   }
   segments=out;
-  document.getElementById('lg-hi').style.display='flex';
-  document.getElementById('lg-hi-line').style.background=color;
-  xTr.clearRect(0,0,CW,CH);drawAllSegments(xTr);
+  coalesceSegments();
+  redrawTrace();
+}
+// Merge adjacent segments that are the same type+colour and meet end-to-end, so
+// recolouring doesn't fragment the track into thousands of tiny pieces.
+function coalesceSegments(){
+  const out=[];
+  for(const s of segments){
+    const last=out[out.length-1];
+    if(last && last.type===s.type && last.color===s.color && last.w===s.w && last.pts.length){
+      const t=last.pts[last.pts.length-1], h=s.pts[0];
+      if((t.x-h.x)**2+(t.y-h.y)**2<4){ last.pts.push(...s.pts.slice(1)); continue; }
+    }
+    out.push({...s,pts:[...s.pts]});
+  }
+  segments=out;
 }
 
 // ── Stroke drawing ──
 function drawStroke(ctx,pts,color,width,dashed,alpha){
-  if(pts.length<2)return;
+  if(!pts.length)return;
   ctx.save();
-  ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';
   ctx.globalAlpha=alpha!==undefined?alpha:.92;
+  if(pts.length===1){ctx.beginPath();ctx.arc(pts[0].x,pts[0].y,width/2,0,Math.PI*2);ctx.fill();ctx.restore();return;}
   ctx.setLineDash(dashed?[width*2.2,width*1.1]:[]);
   ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
   for(let i=1;i<pts.length-1;i++)
@@ -3733,11 +3799,25 @@ function drawStroke(ctx,pts,color,width,dashed,alpha){
   ctx.stroke();ctx.restore();
 }
 function drawAllSegments(ctx){
-  segments.filter(s=>s.type==='std'&&s.color==='#d8d4c0').forEach(s=>drawStroke(ctx,s.pts,s.color,s.w,false,.92));
-  segments.filter(s=>s.type==='alt'&&s.color==='#c9b896').forEach(s=>drawStroke(ctx,s.pts,s.color,s.w,true,.88));
-  segments.filter(s=>s.color!=='#d8d4c0'&&s.color!=='#c9b896').forEach(s=>drawStroke(ctx,s.pts,s.color,s.w,false,.92));
+  segments.filter(isStdSeg).forEach(s=>drawStroke(ctx,s.pts,dispColor(s),s.w,false,.92));
+  segments.filter(isAltSeg).forEach(s=>drawStroke(ctx,s.pts,dispColor(s),s.w,true,.88));
+  segments.filter(isHiSeg).forEach(s=>drawStroke(ctx,s.pts,dispColor(s),s.w,false,.92));
 }
-function redrawTrace(){xTr.clearRect(0,0,CW,CH);drawAllSegments(xTr);}
+function redrawTrace(){xTr.clearRect(0,0,CW,CH);drawAllSegments(xTr);refreshLegendDom();}
+// Rebuild the on-screen DOM legend to reflect the current theme, recolour name, and which rows apply.
+function refreshLegendDom(){
+  const lg=document.getElementById('legend'); if(!lg)return;
+  const light=bgStyle==='light';
+  const stdC=light?TC_LIGHT.main:'#d8d4c0', altC=light?TC_LIGHT.alt:'#c9b896';
+  const hseg=segments.find(isHiSeg);
+  let html=`<div id="lg-title">Track legend</div>`;
+  html+=`<div class="lg"><div class="lg-line" style="background:${stdC}"></div>Standard lap</div>`;
+  html+=`<div class="lg"><div class="lg-dash" style="border-top-color:${altC}"></div>Alternative section</div>`;
+  if(hseg) html+=`<div class="lg"><div class="lg-line" style="background:${hseg.color}"></div>${esc(hiName||'Recolored section')}</div>`;
+  if(sfPos) html+=`<div class="lg"><div style="width:22px;text-align:center">⚑</div>Start / Finish</div>`;
+  html+=`<div class="lg-drag">⠿ drag to move</div>`;
+  lg.innerHTML=html;
+}
 
 // ── Undo ──
 function pushUndo(){undoStack.push(segments.map(s=>({...s,pts:[...s.pts]})));if(undoStack.length>50)undoStack.shift();}
@@ -3810,7 +3890,6 @@ function setOverlaysHidden(h){
 function showRenderCanvas(on){ cRe.style.display=on?'block':'none'; setOverlaysHidden(on); }
 
 let panelPreview=false, prevRenderVis=false;
-function liveUS(){ return Math.max(0.45, 1/vZoom); } // label scale matching on-screen DOM pins
 function sizeRpCanvas(){
   const maxW=256,maxH=200, sc=Math.min(maxW/CW,maxH/CH);
   rpCanv.width =Math.max(40,Math.round(CW*sc));
@@ -3818,13 +3897,13 @@ function sizeRpCanvas(){
 }
 function schedLiveRender(){clearTimeout(liveTimer);liveTimer=setTimeout(()=>{
   doRenderToCtx(rpCtx,rpCanv.width,rpCanv.height,true);
-  if(panelPreview||renderVis)doRenderToCtx(xRe,CW,CH,false,{uiScale:liveUS()}); // live preview in the real frame
+  if(panelPreview||renderVis)doRenderToCtx(xRe,CW,CH,false); // live preview in the real frame
 },60);}
 function openRenderPanel(){
   document.getElementById('render-panel').style.display='block';
   prevRenderVis=renderVis; panelPreview=true;
   sizeRpCanvas();
-  doRenderToCtx(xRe,CW,CH,false,{uiScale:liveUS()});   // full-size live preview in the actual canvas frame
+  doRenderToCtx(xRe,CW,CH,false);   // full-size live preview in the actual canvas frame
   showRenderCanvas(true);
   schedLiveRender();
 }
@@ -3845,7 +3924,7 @@ function doRenderToCtx(ctx,w,h,isThumb,opts){
   const scaleX=w/CW, scaleY=h/CH;
 
   ctx.clearRect(0,0,w,h);
-  if(bgStyle==='light'){ctx.fillStyle='#f0ece0';ctx.fillRect(0,0,w,h);}
+  if(bgStyle==='light'){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,w,h);}
   else if(bgStyle==='dark'){ctx.fillStyle='#0b0a08';ctx.fillRect(0,0,w,h);}
 
   if(bgImg&&bgVisible&&bgStyle!=='trans'){ ctx.drawImage(bgImg,0,0,w,h); }
@@ -3862,38 +3941,39 @@ function doRenderToCtx(ctx,w,h,isThumb,opts){
       const pts=scPts(smoothed);
       if(pts.length<2)return;
       const width=chain.w*lwMul*Math.min(scaleX,scaleY);
-      const isDash=chain.type==='alt'&&chain.color==='#c9b896';
+      const col=dispColor(chain);
+      const isDash=isAltSeg(chain);
       if(glowA>0){
         [[width+10,glowA*.25],[width+4,glowA*.65]].forEach(([lw,a])=>{
-          ctx.save();ctx.strokeStyle=chain.color;ctx.lineWidth=lw;ctx.lineCap='round';ctx.lineJoin='round';ctx.globalAlpha=a;ctx.setLineDash([]);
+          ctx.save();ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';ctx.lineJoin='round';ctx.globalAlpha=a;ctx.setLineDash([]);
           ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
           for(let i=1;i<pts.length-1;i++)ctx.quadraticCurveTo(pts[i].x,pts[i].y,(pts[i].x+pts[i+1].x)/2,(pts[i].y+pts[i+1].y)/2);
           ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);ctx.stroke();ctx.restore();
         });
       }
-      ctx.save();ctx.strokeStyle=chain.color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';
+      ctx.save();ctx.strokeStyle=col;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';
       ctx.globalAlpha=isDash?.87:.94;ctx.setLineDash(isDash?[width*2.4,width*1.1]:[]);
       ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
       for(let i=1;i<pts.length-1;i++)ctx.quadraticCurveTo(pts[i].x,pts[i].y,(pts[i].x+pts[i+1].x)/2,(pts[i].y+pts[i+1].y)/2);
       ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);ctx.stroke();ctx.restore();
     });
   }
-  renderGroup(segments.filter(s=>s.type==='std'&&s.color==='#d8d4c0'));
-  renderGroup(segments.filter(s=>s.type==='alt'&&s.color==='#c9b896'));
-  renderGroup(segments.filter(s=>s.color!=='#d8d4c0'&&s.color!=='#c9b896'));
+  renderGroup(segments.filter(isStdSeg));
+  renderGroup(segments.filter(isAltSeg));
+  renderGroup(segments.filter(isHiSeg));
 
   if(!isThumb){
     if(sfPos)drawSFCanvas(ctx,sfPos.x*scaleX,sfPos.y*scaleY);
     const seen=new Set();
-    // On-screen render: match the live DOM pin size (constant on screen) so labels
-    // don't "jump" size when toggling render. Export: size proportional to the image.
-    const us=opts.uiScale||Math.max(1,Math.min(w,h)/620);
+    // Label size scales with output resolution so the preview and the (higher-res)
+    // export look identical — WYSIWYG. labelScale lets the user shrink text for big prints.
+    const us=labelScale*(Math.min(w,h)/Math.min(CW,CH));
     labels.forEach(lb=>{
       if(seen.has(lb.id))return;seen.add(lb.id);     // dedup so each label draws once
       drawLabelCanvas(ctx,lb,scaleX,scaleY,us);
     });
-    // Legend is baked only into exports; on screen the (movable) DOM legend is used,
-    // so the rendered preview never paints the legend over the track.
+    // Legend is baked only into exports (positioned to match the on-screen DOM legend);
+    // on screen the movable DOM legend is used so it never paints over the track.
     if(opts.isExport)drawLegendCanvas(ctx,w,h);
   } else {
     const seen=new Set();
@@ -3906,7 +3986,8 @@ function doRenderToCtx(ctx,w,h,isThumb,opts){
 }
 // Draw one label as a short leader line + offset name box (matches the DOM pins; no dot).
 function drawLabelCanvas(ctx,lb,scaleX,scaleY,us){
-  const col=TC[lb.type]||TC.main;
+  const col=labelInk(lb.type);
+  const light=bgStyle==='light';
   const px=lb.x*scaleX, py=lb.y*scaleY;
   const g=pinGeom(lb.dir);
   const ex=px+g.bx*us, ey=py+g.by*us;     // box's anchored corner
@@ -3920,15 +4001,15 @@ function drawLabelCanvas(ctx,lb,scaleX,scaleY,us){
   // leader line from the track point to the box corner
   ctx.strokeStyle=col;ctx.lineWidth=Math.max(1,1.4*us);ctx.globalAlpha=.8;
   ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(ex,ey);ctx.stroke();ctx.globalAlpha=1;
-  // name box
-  ctx.fillStyle='rgba(8,8,6,.94)';rrect(ctx,bx,by,tw,bh,4*us);ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,.14)';ctx.lineWidth=1;ctx.stroke();
+  // name box (white-ish in light theme, near-black otherwise)
+  ctx.fillStyle=light?'rgba(255,255,255,.95)':'rgba(8,8,6,.94)';rrect(ctx,bx,by,tw,bh,4*us);ctx.fill();
+  ctx.strokeStyle=light?'rgba(0,0,0,.15)':'rgba(255,255,255,.14)';ctx.lineWidth=1;ctx.stroke();
   ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';
   ctx.fillText(lb.name,bx+padX,by+bh/2+0.5);
   ctx.restore();
 }
 function doRender(silent){
-  doRenderToCtx(xRe,CW,CH,false,{uiScale:liveUS()});
+  doRenderToCtx(xRe,CW,CH,false);
   renderVis=true; panelPreview=false;
   showRenderCanvas(true);
   document.getElementById('btn-rv').style.display='';
@@ -3944,10 +4025,10 @@ function toggleRender(){
 // ── S/F ──
 function placeSF(p){
   sfPos={x:p.x,y:p.y};refreshSFEl();
-  document.getElementById('lg-sf').style.display='flex';
   setMode('browse');
 }
 function refreshSFEl(){
+  refreshLegendDom();
   let el=document.getElementById('sf-el');
   if(!sfPos){if(el)el.remove();return;}
   if(!el){
@@ -4118,47 +4199,64 @@ function closeEdit(){
   highlightRow(null);
 }
 
-// ── Legend on full canvas ──
-function drawLegendCanvas(ctx,cw,ch){
-  const hasHi=segments.some(s=>s.color!=='#d8d4c0'&&s.color!=='#c9b896');
-  const rows=[{color:'#d8d4c0',dash:false,label:'Standard lap'},{color:'#c9b896',dash:true,label:'Alternative section'}];
-  if(hasHi){const h=segments.find(s=>s.color!=='#d8d4c0'&&s.color!=='#c9b896');if(h)rows.push({color:h.color,dash:false,label:'Recolored section'});}
+// ── Legend baked into exports — mirrors the on-screen DOM legend's position, size & theme ──
+function drawLegendCanvas(ctx,w,h){
+  const light=bgStyle==='light';
+  const hseg=segments.find(isHiSeg);
+  const rows=[
+    {color:light?TC_LIGHT.main:'#d8d4c0',dash:false,label:'Standard lap'},
+    {color:light?TC_LIGHT.alt:'#c9b896', dash:true, label:'Alternative section'}
+  ];
+  if(hseg)rows.push({color:hseg.color,dash:false,label:hiName||'Recolored section'});
   if(sfPos)rows.push({sf:true,label:'Start / Finish'});
-  const lh=rows.length*18+30,lx=cw-158,ly=ch-lh-14,lw=146;
+
+  // Mirror the DOM legend: convert its on-screen box to canvas coords, then to output px.
+  const lg=document.getElementById('legend'), lr=lg.getBoundingClientRect();
+  const tl=toCanvas(lr.left,lr.top), sX=w/CW, sY=h/CH;
+  const lw=(lr.width/vZoom)*sX;
+  const s=lw/146;                          // internal layout scale
+  const lh=(rows.length*18+30)*s;
+  let lx=tl.x*sX, ly=tl.y*sY;
+  lx=Math.max(0,Math.min(w-lw,lx)); ly=Math.max(0,Math.min(h-lh,ly));
+
   ctx.save();
-  ctx.fillStyle='rgba(6,6,4,.9)';rrect(ctx,lx,ly,lw,lh,7);ctx.fill();
-  ctx.strokeStyle='#1d1b16';ctx.lineWidth=1;rrect(ctx,lx,ly,lw,lh,7);ctx.stroke();
-  ctx.font='700 9px system-ui,sans-serif';ctx.fillStyle='#4c483e';ctx.textAlign='left';
-  ctx.fillText('TRACK LEGEND',lx+10,ly+16);
+  ctx.fillStyle=light?'rgba(255,255,255,.93)':'rgba(6,6,4,.9)';rrect(ctx,lx,ly,lw,lh,7*s);ctx.fill();
+  ctx.strokeStyle=light?'rgba(0,0,0,.15)':'#1d1b16';ctx.lineWidth=1;rrect(ctx,lx,ly,lw,lh,7*s);ctx.stroke();
+  ctx.font=`700 ${9*s}px system-ui,sans-serif`;ctx.fillStyle=light?'#6a6256':'#4c483e';ctx.textAlign='left';
+  ctx.fillText('TRACK LEGEND',lx+10*s,ly+16*s);
   rows.forEach((row,i)=>{
-    const ry=ly+28+i*18;
+    const ry=ly+28*s+i*18*s;
     if(row.sf){
+      const c=5*s;
       [[0,false],[1,true],[0,true],[1,false]].forEach(([cx,dark])=>{
-        ctx.fillStyle=dark?'#1a1a18':'#f0ece0';
-        ctx.fillRect(lx+10+cx*5,ry-5,5,5);ctx.fillRect(lx+10+(1-cx)*5,ry,5,5);
+        ctx.fillStyle=dark?'#1a1a18':(light?'#e6e2d8':'#f0ece0');
+        ctx.fillRect(lx+10*s+cx*c,ry-c,c,c);ctx.fillRect(lx+10*s+(1-cx)*c,ry,c,c);
       });
     } else {
-      ctx.save();ctx.strokeStyle=row.color;ctx.lineWidth=3;ctx.lineCap='round';ctx.setLineDash(row.dash?[6,3]:[]);ctx.globalAlpha=.9;
-      ctx.beginPath();ctx.moveTo(lx+10,ry+1);ctx.lineTo(lx+34,ry+1);ctx.stroke();ctx.restore();
+      ctx.save();ctx.strokeStyle=row.color;ctx.lineWidth=3*s;ctx.lineCap='round';ctx.setLineDash(row.dash?[6*s,3*s]:[]);ctx.globalAlpha=.92;
+      ctx.beginPath();ctx.moveTo(lx+10*s,ry+s);ctx.lineTo(lx+34*s,ry+s);ctx.stroke();ctx.restore();
     }
-    ctx.font='500 10px system-ui,sans-serif';ctx.fillStyle='#5c574c';ctx.textAlign='left';ctx.setLineDash([]);
-    ctx.fillText(row.label,lx+42,ry+5);
+    ctx.font=`500 ${10*s}px system-ui,sans-serif`;ctx.fillStyle=light?'#33302a':'#5c574c';ctx.textAlign='left';ctx.setLineDash([]);
+    ctx.fillText(row.label,lx+42*s,ry+5*s);
   });
   ctx.restore();
 }
 
 // ── Export ──
 function exportImg(){
-  const out=document.createElement('canvas');out.width=CW;out.height=CH;
+  const r=Math.max(1,exportRes|0);
+  const out=document.createElement('canvas');out.width=Math.round(CW*r);out.height=Math.round(CH*r);
   const ox=out.getContext('2d');
-  // Always re-render at full resolution with the legend baked in and image-proportional labels.
-  doRenderToCtx(ox,CW,CH,false,{isExport:true,uiScale:Math.max(1,Math.min(CW,CH)/900)});
-  const a=document.createElement('a');a.href=out.toDataURL('image/png');a.download='lugnet-track.png';a.click();
+  // Re-render at the chosen resolution; identical composition to the on-screen frame, plus baked legend.
+  doRenderToCtx(ox,out.width,out.height,false,{isExport:true});
+  const a=document.createElement('a');a.href=out.toDataURL('image/png');
+  a.download=`lugnet-track-${out.width}x${out.height}.png`;a.click();
+  stEl.textContent=`Exported ${out.width}×${out.height} PNG`;
 }
 
 // ── Save / Load ──
 function saveJSON(){
-  const d={v:7,CW,CH,bgStyle,hiColor,labelId,segId,sfPos:sfPos?{x:+sfPos.x.toFixed(1),y:+sfPos.y.toFixed(1)}:null,
+  const d={v:7,CW,CH,bgStyle,hiColor,hiName,labelScale,labelId,segId,sfPos:sfPos?{x:+sfPos.x.toFixed(1),y:+sfPos.y.toFixed(1)}:null,
     segments:segments.map(s=>({id:s.id,type:s.type,color:s.color,w:s.w,pts:s.pts.map(p=>[+(p.x.toFixed(1)),+(p.y.toFixed(1))])})),
     labels:labels.map(l=>({id:l.id,x:+l.x.toFixed(1),y:+l.y.toFixed(1),name:l.name,type:l.type,dir:l.dir||'ne'}))
   };
@@ -4198,14 +4296,12 @@ function loadJSON(e){
       labelId=Math.max(d.labelId||0, labels.reduce((m,l)=>Math.max(m,l.id||0),0));
       sfPos=d.sfPos?(legacy?{x:d.sfPos.x/100*CW,y:d.sfPos.y/100*CH}:{x:d.sfPos.x,y:d.sfPos.y}):null;
       if(d.hiColor){hiColor=d.hiColor;document.getElementById('hi-color').value=hiColor;document.getElementById('hi-sw').style.background=hiColor;}
-      if(d.bgStyle)setStyle(d.bgStyle);
+      if(d.hiName!=null){hiName=d.hiName;const hn=document.getElementById('hi-name');if(hn)hn.value=hiName;}
+      if(d.labelScale){labelScale=d.labelScale;const ls=document.getElementById('rp-lblsize');if(ls){ls.value=labelScale;rpV('rp-lblsize-v',labelScale);}}
+      setStyle(d.bgStyle||'dark');
       pinsEl.innerHTML='';labels.forEach(renderPin);
       redrawBg();redrawTrace();refreshSidebar();refreshSFEl();resetView();
       renderVis=false;panelPreview=false;showRenderCanvas(false);document.getElementById('btn-rv').style.display='none';
-      document.getElementById('lg-sf').style.display=sfPos?'flex':'none';
-      const hasHi=segments.some(s=>s.color!=='#d8d4c0'&&s.color!=='#c9b896');
-      if(hasHi){const h=segments.find(s=>s.color!=='#d8d4c0'&&s.color!=='#c9b896');if(h){document.getElementById('lg-hi').style.display='flex';document.getElementById('lg-hi-line').style.background=h.color;}}
-      else{document.getElementById('lg-hi').style.display='none';}
       stEl.textContent='Session loaded — '+segments.length+' segments, '+labels.length+' labels';
     }catch(err){alert('Could not load — invalid file.');}
   };
@@ -4248,12 +4344,13 @@ function makeLegendDraggable(){
 }
 
 // ── Boot ──
-initCanvases();resetView();setMode('browse');makeLegendDraggable();
+initCanvases();resetView();setMode('browse');makeLegendDraggable();refreshLegendDom();
 
 // ── Public API used by the Track Studio markup ──
 window.TS={
   triggerFile, loadBg, loadFromRouteArt, toggleBg, setStyle,
-  setMode, zoomStep, resetView, setStroke, setHiColor, setEraseR,
+  setMode, zoomStep, resetView, zoomTo100, toggleZoom, setStroke, setHiColor, setEraseR,
+  setHiName, setLabelScale, setExportRes,
   undo, clearTraces, openRenderPanel, toggleRender, exportImg,
   saveJSON, loadJSON, saveLabel, copyLabel, copyLabelById,
   deleteLabel, quickDelete, closeEdit, rpV, schedLiveRender,
