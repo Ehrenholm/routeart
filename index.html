@@ -385,7 +385,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
 #page-studio .rp-hint{font-size:9px;color:var(--faint);text-align:center;margin:-2px 0 8px;}
 #page-studio .rp-btns{display:flex;gap:4px;margin-top:8px;}
 #page-studio .rp-btns .btn{flex:1;font-size:10px;padding:4px 5px;}
-#page-studio #legend{position:absolute;bottom:28px;right:10px;background:rgba(8,8,6,.92);border:1px solid var(--border);border-radius:8px;padding:9px 12px;z-index:30;pointer-events:auto;cursor:grab;min-width:152px;user-select:none;}
+#page-studio #legend{position:absolute;left:0;top:0;background:rgba(8,8,6,.92);border:1px solid var(--border);border-radius:8px;padding:9px 12px;z-index:7;pointer-events:auto;cursor:grab;min-width:152px;user-select:none;}
 #page-studio #legend:active{cursor:grabbing;}
 #page-studio #legend .lg-drag{font-size:8px;color:var(--faint3);letter-spacing:.06em;margin-top:5px;text-align:center;}
 #page-studio #lg-title{font-size:9px;font-weight:700;color:var(--faint3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
@@ -894,6 +894,11 @@ canvas#overlay{position:absolute;top:0;left:0;}
         <canvas id="c-live"></canvas>
         <div id="pins"></div>
         <div id="sf-layer"></div>
+        <div id="legend">
+          <div id="lg-title">Track legend</div>
+          <div class="lg"><div class="lg-line" style="background:#d8d4c0"></div>Standard lap</div>
+          <div class="lg"><div class="lg-dash"></div>Alternative section</div>
+        </div>
       </div>
 
       <div id="dropzone">
@@ -928,13 +933,6 @@ canvas#overlay{position:absolute;top:0;left:0;}
         </div>
       </div>
 
-      <div id="legend">
-        <div id="lg-title">Track legend</div>
-        <div class="lg"><div class="lg-line" style="background:#d8d4c0"></div>Standard lap</div>
-        <div class="lg"><div class="lg-dash"></div>Alternative section</div>
-        <div class="lg" id="lg-hi" style="display:none"><div class="lg-line" id="lg-hi-line"></div><span id="lg-hi-txt">Recolored</span></div>
-        <div class="lg" id="lg-sf" style="display:none"><div style="width:22px;text-align:center">⚑</div>Start / Finish</div>
-      </div>
     </div>
   </div>
 </div><!-- end #page-studio -->
@@ -3503,6 +3501,7 @@ const TC={main:'#d8d4c0', alt:'#c9b896', tbd:'#7aaa7a'};
 // Light ("black on white") theme ink — used when bgStyle==='light'.
 const TC_LIGHT={main:'#161310', alt:'#5b4a22', tbd:'#2f5a2f'};
 let hiName='Recolored section';   // editable legend name for the recoloured colour
+let legendPos=null;               // legend top-left in CANVAS coords (so it's fixed to the track, not the screen)
 let labelScale=1.0;               // label/legend size multiplier (same in preview AND export → WYSIWYG)
 let exportRes=2;                  // export resolution multiplier (1×/2×/4× …) for large-format printing
 // Segment categorisation (by type+canonical colour, independent of display theme).
@@ -3661,7 +3660,7 @@ function loadFromRouteArt(){
   img.src=src.toDataURL('image/png');
 }
 function adoptBgImage(img){
-  bgImg=img; CW=img.width; CH=img.height;
+  bgImg=img; CW=img.width; CH=img.height; legendPos=null; // re-place legend for the new canvas size
   initCanvases(); bgVisible=true;
   document.getElementById('btn-bg').classList.add('on');
   document.getElementById('dropzone').style.display='none';
@@ -3827,6 +3826,31 @@ function refreshLegendDom(){
   if(sfPos) html+=`<div class="lg"><div style="width:22px;text-align:center">⚑</div>Start / Finish</div>`;
   html+=`<div class="lg-drag">⠿ drag to move</div>`;
   lg.innerHTML=html;
+  positionLegendDom();
+}
+// Default legend spot: a corner of the TRACK's bounding box (keeps the export tight),
+// choosing whichever corner has the least track ink so it doesn't sit on the line.
+function defaultLegendPos(){
+  const lg=document.getElementById('legend'); const w=lg.offsetWidth||160,h=lg.offsetHeight||90;
+  let bx0=Infinity,by0=Infinity,bx1=-Infinity,by1=-Infinity;
+  segments.forEach(s=>s.pts.forEach(p=>{if(p.x<bx0)bx0=p.x;if(p.y<by0)by0=p.y;if(p.x>bx1)bx1=p.x;if(p.y>by1)by1=p.y;}));
+  const clamp=c=>({x:Math.max(0,Math.min(CW-w,c.x)),y:Math.max(0,Math.min(CH-h,c.y))});
+  if(!isFinite(bx0))return clamp({x:CW-w-16,y:CH-h-16});
+  const cands=[{x:bx1-w,y:by1-h},{x:bx0,y:by1-h},{x:bx1-w,y:by0},{x:bx0,y:by0}].map(clamp);
+  let best=cands[0],bestScore=Infinity;
+  for(const c of cands){
+    let a=0;
+    try{const d=xTr.getImageData(c.x,c.y,Math.max(1,Math.min(w,CW-c.x)),Math.max(1,Math.min(h,CH-c.y))).data;
+      for(let i=3;i<d.length;i+=4)if(d[i]>0)a++;}catch(e){}
+    if(a<bestScore){bestScore=a;best=c;}
+  }
+  return best;
+}
+// Position the (canvas-anchored) legend; it lives inside #viewport so it scales/pans with the track.
+function positionLegendDom(){
+  const lg=document.getElementById('legend'); if(!lg)return;
+  if(!legendPos)legendPos=defaultLegendPos();
+  lg.style.left=legendPos.x+'px'; lg.style.top=legendPos.y+'px';
 }
 
 // ── Undo ──
@@ -4221,14 +4245,13 @@ function drawLegendCanvas(ctx,w,h){
   if(hseg)rows.push({color:hseg.color,dash:false,label:hiName||'Recolored section'});
   if(sfPos)rows.push({sf:true,label:'Start / Finish'});
 
-  // Mirror the DOM legend: convert its on-screen box to canvas coords, then to output px.
-  const lg=document.getElementById('legend'), lr=lg.getBoundingClientRect();
-  const tl=toCanvas(lr.left,lr.top), sX=w/CW, sY=h/CH;
-  const lw=(lr.width/vZoom)*sX;
+  // Legend lives at a fixed CANVAS position (legendPos) → same place on screen and in export.
+  const lg=document.getElementById('legend'); if(!legendPos)legendPos=defaultLegendPos();
+  const sX=w/CW, sY=h/CH;
+  const lw=(lg.offsetWidth||152)*sX;
   const s=lw/146;                          // internal layout scale
   const lh=(rows.length*18+30)*s;
-  let lx=tl.x*sX, ly=tl.y*sY;
-  lx=Math.max(0,Math.min(w-lw,lx)); ly=Math.max(0,Math.min(h-lh,ly));
+  const lx=legendPos.x*sX, ly=legendPos.y*sY;
 
   ctx.save();
   ctx.fillStyle=light?'rgba(255,255,255,.93)':'rgba(6,6,4,.9)';rrect(ctx,lx,ly,lw,lh,7*s);ctx.fill();
@@ -4270,9 +4293,8 @@ function contentBBox(){
     add(bx,by); add(bx+tw,by+bh);
   });
   if(sfPos){add(sfPos.x-22,sfPos.y-28);add(sfPos.x+22,sfPos.y+6);}
-  const lg=document.getElementById('legend'),lr=lg.getBoundingClientRect();
-  const tl=toCanvas(lr.left,lr.top), br=toCanvas(lr.right,lr.bottom);
-  add(tl.x,tl.y); add(br.x,br.y);
+  const lg=document.getElementById('legend'); if(!legendPos)legendPos=defaultLegendPos();
+  add(legendPos.x,legendPos.y); add(legendPos.x+(lg.offsetWidth||152), legendPos.y+(lg.offsetHeight||90));
   if(!isFinite(x0))return {x:0,y:0,w:CW,h:CH};
   const padX=(x1-x0)*0.04+14*k, padY=(y1-y0)*0.04+14*k;
   x0=Math.max(0,x0-padX); y0=Math.max(0,y0-padY);
@@ -4327,8 +4349,8 @@ function svgLegend(){
   const rows=[{color:light?TC_LIGHT.main:'#d8d4c0',dash:false,label:'Standard lap'},{color:light?TC_LIGHT.alt:'#c9b896',dash:true,label:'Alternative section'}];
   if(hseg)rows.push({color:hseg.color,dash:false,label:hiName||'Recolored section'});
   if(sfPos)rows.push({sf:true,label:'Start / Finish'});
-  const lg=document.getElementById('legend'),lr=lg.getBoundingClientRect();
-  const tl=toCanvas(lr.left,lr.top), lw=lr.width/vZoom, s=lw/146, lh=(rows.length*18+30)*s, lx=tl.x, ly=tl.y;
+  const lg=document.getElementById('legend'); if(!legendPos)legendPos=defaultLegendPos();
+  const lw=lg.offsetWidth||152, s=lw/146, lh=(rows.length*18+30)*s, lx=legendPos.x, ly=legendPos.y;
   let o=`<rect x="${svgF(lx)}" y="${svgF(ly)}" width="${svgF(lw)}" height="${svgF(lh)}" rx="${svgF(7*s)}" fill="${light?'#ffffff':'#060604'}" fill-opacity="${light?0.93:0.9}" stroke="${light?'#000':'#1d1b16'}" stroke-opacity="${light?0.15:1}"/>`;
   o+=`<text x="${svgF(lx+10*s)}" y="${svgF(ly+16*s)}" font-size="${svgF(9*s)}" font-weight="700" fill="${light?'#6a6256':'#4c483e'}">TRACK LEGEND</text>`;
   rows.forEach((row,i)=>{const ry=ly+28*s+i*18*s;
@@ -4382,7 +4404,7 @@ function exportSVG(){
 
 // ── Save / Load ──
 function saveJSON(){
-  const d={v:7,CW,CH,bgStyle,hiColor,hiName,labelScale,labelId,segId,sfPos:sfPos?{x:+sfPos.x.toFixed(1),y:+sfPos.y.toFixed(1)}:null,
+  const d={v:7,CW,CH,bgStyle,hiColor,hiName,labelScale,legendPos,labelId,segId,sfPos:sfPos?{x:+sfPos.x.toFixed(1),y:+sfPos.y.toFixed(1)}:null,
     segments:segments.map(s=>({id:s.id,type:s.type,color:s.color,w:s.w,pts:s.pts.map(p=>[+(p.x.toFixed(1)),+(p.y.toFixed(1))])})),
     labels:labels.map(l=>({id:l.id,x:+l.x.toFixed(1),y:+l.y.toFixed(1),name:l.name,type:l.type,dir:l.dir||'ne'}))
   };
@@ -4423,6 +4445,7 @@ function loadJSON(e){
       sfPos=d.sfPos?(legacy?{x:d.sfPos.x/100*CW,y:d.sfPos.y/100*CH}:{x:d.sfPos.x,y:d.sfPos.y}):null;
       if(d.hiColor){hiColor=d.hiColor;document.getElementById('hi-color').value=hiColor;document.getElementById('hi-sw').style.background=hiColor;}
       if(d.hiName!=null){hiName=d.hiName;const hn=document.getElementById('hi-name');if(hn)hn.value=hiName;}
+      legendPos=d.legendPos||null;   // null → auto-place in the emptiest corner
       if(d.labelScale){labelScale=d.labelScale;const ls=document.getElementById('rp-lblsize');if(ls){ls.value=labelScale;rpV('rp-lblsize-v',labelScale);}}
       setStyle(d.bgStyle||'dark');
       pinsEl.innerHTML='';labels.forEach(renderPin);
@@ -4444,20 +4467,22 @@ function rrect(ctx,x,y,w,h,r){
   ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
 }
 
-// ── Legend: draggable so it can be moved off the track ──
+// ── Legend drag — works in CANVAS coords so its position is fixed to the track
+//    (identical on screen and in PNG/SVG export). ──
 function makeLegendDraggable(){
   const lg=document.getElementById('legend');if(!lg)return;
   const start=e=>{
     e.preventDefault();e.stopPropagation();
     const src=e.touches?e.touches[0]:e;
-    const par=cArea.getBoundingClientRect(), box=lg.getBoundingClientRect();
-    const offX=src.clientX-box.left, offY=src.clientY-box.top;
+    if(!legendPos)legendPos=defaultLegendPos();
+    const p0=toCanvas(src.clientX,src.clientY);
+    const off={x:p0.x-legendPos.x, y:p0.y-legendPos.y};
     const mv=ev=>{
       const s=ev.touches?ev.touches[0]:ev;
-      let x=s.clientX-par.left-offX, y=s.clientY-par.top-offY;
-      x=Math.max(0,Math.min(par.width-box.width,x));
-      y=Math.max(0,Math.min(par.height-box.height,y));
-      lg.style.left=x+'px';lg.style.top=y+'px';lg.style.right='auto';lg.style.bottom='auto';
+      const p=toCanvas(s.clientX,s.clientY);
+      const w=lg.offsetWidth,h=lg.offsetHeight;
+      legendPos={x:Math.max(0,Math.min(CW-w,p.x-off.x)), y:Math.max(0,Math.min(CH-h,p.y-off.y))};
+      positionLegendDom();
     };
     const up=()=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',mv);document.removeEventListener('touchend',up);};
     document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
@@ -4465,8 +4490,6 @@ function makeLegendDraggable(){
   };
   lg.addEventListener('mousedown',start);
   lg.addEventListener('touchstart',start,{passive:false});
-  // tiny "drag" affordance
-  if(!lg.querySelector('.lg-drag')){const d=document.createElement('div');d.className='lg-drag';d.textContent='⠿ drag to move';lg.appendChild(d);}
 }
 
 // ── Boot ──
