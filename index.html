@@ -33,7 +33,7 @@ body{background:var(--app);color:var(--txt);font-family:'Geist',system-ui,sans-s
 @keyframes fadeup{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 
 /* ── TOP BAR ──────────────────────────────────────────────────────────── */
-header{height:58px;flex-shrink:0;display:flex;align-items:center;gap:18px;padding:0 18px;border-bottom:1px solid var(--border);background:var(--panel);}
+header{height:58px;flex-shrink:0;display:flex;align-items:center;gap:18px;padding:0 18px;border-bottom:1px solid var(--border);background:var(--panel);position:relative;z-index:251;}
 .brand{display:flex;align-items:center;gap:10px;}
 .brand-mark{width:26px;height:26px;border-radius:7px;background:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(201,184,150,.25);flex-shrink:0;}
 header h1{font-family:'DM Serif Display',serif;font-size:21px;letter-spacing:.2px;line-height:1;color:var(--txt);}
@@ -291,7 +291,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
 }
 
 /* ════════════ TAB BAR ════════════ */
-.tab-bar{display:flex;gap:4px;padding:0 18px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;}
+.tab-bar{display:flex;gap:4px;padding:0 18px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;position:relative;z-index:251;}
 .tab-btn{position:relative;padding:11px 18px;font-family:'Geist',sans-serif;font-size:12.5px;font-weight:500;color:var(--mut2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:color .15s,border-color .15s;letter-spacing:.02em;display:flex;align-items:center;gap:7px;}
 .tab-btn:hover{color:var(--txt2);}
 .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
@@ -301,10 +301,12 @@ canvas#overlay{position:absolute;top:0;left:0;}
 #page-studio{flex:1;min-height:0;display:none;flex-direction:column;overflow:hidden;}
 #page-studio.active{display:flex;}
 #page-studio #toolbar{display:flex;gap:6px;align-items:center;padding:7px 12px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;row-gap:6px;z-index:50;}
-#page-studio .ts-group{display:flex;align-items:center;gap:3px;padding:3px 7px 3px 8px;background:var(--surface);border:1px solid var(--bsub2);border-radius:9px;}
+#page-studio .ts-group{display:flex;align-items:center;gap:3px;padding:3px 7px 3px 8px;background:var(--surface);border:1px solid var(--bsub2);border-radius:9px;box-shadow:0 2px 6px rgba(5,4,3,.4);}
 #page-studio .ts-glabel{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut2);margin-right:3px;white-space:nowrap;user-select:none;}
 #page-studio .btn{padding:5px 10px;border-radius:6px;border:1px solid var(--bctrl);background:var(--surface2);color:var(--txt2);font-size:12px;cursor:pointer;white-space:nowrap;transition:all .1s;line-height:1.5;user-select:none;font-family:'Geist',sans-serif;}
 #page-studio .btn:hover{background:var(--hover);border-color:#4a4840;color:var(--txt);}
+#page-studio .btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+#page-studio .ts-sidebar-btn{display:none;}
 #page-studio .btn.on{background:#141e14;border-color:#2a5028;color:var(--ok);}
 #page-studio .btn.on-alt{background:#201808;border-color:#5a4010;color:#c9b896;}
 #page-studio .btn.on-er{background:#200808;border-color:#5a2020;color:#c06060;}
@@ -319,16 +321,21 @@ canvas#overlay{position:absolute;top:0;left:0;}
 #page-studio .style-toggle .btn.on{background:#141e14;color:var(--ok);}
 #page-studio #sw-wrap{display:flex;align-items:center;gap:4px;}
 #page-studio #sw,#page-studio #er-sw{width:46px;cursor:pointer;accent-color:var(--accent);}
+#page-studio #sw:focus-visible,#page-studio #er-sw:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 #page-studio .sw-val{font-size:10px;color:var(--faint3);min-width:16px;}
 #page-studio #hi-color{width:22px;height:22px;border-radius:4px;border:1px solid var(--bctrl);padding:1px;cursor:pointer;background:none;}
+#page-studio #hi-color:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 #page-studio .zoom-inp{width:48px;font-size:11px;color:var(--txt2);text-align:center;background:var(--surface);border:1px solid var(--bctrl);border-radius:5px;padding:4px 2px;font-family:'Geist',sans-serif;}
 #page-studio .zoom-inp:focus{outline:none;border-color:var(--accent);}
 #page-studio #main{display:flex;flex:1;overflow:hidden;min-height:0;}
-#page-studio #sidebar{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+#page-studio #sidebar{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;box-shadow:2px 0 6px rgba(5,4,3,.35);}
+#page-studio .ts-scrim{display:none;}
 #page-studio #sb-head{padding:8px 11px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--faint3);letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;}
 #page-studio #lbl-list{flex:1;overflow-y:auto;padding:3px 0;min-height:0;}
 #page-studio .lbl-row{display:flex;align-items:center;gap:5px;padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--surface);transition:background .1s;}
 #page-studio .lbl-row:hover{background:var(--surface);}
+#page-studio .lbl-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+#page-studio .lbl-row:focus-within .lrow-acts{opacity:1;}
 #page-studio .lbl-row.sel{background:#141e14;border-left:2px solid var(--ok);}
 #page-studio .lbl-row.sel-a{background:#1c1608;border-left:2px solid #c9b896;}
 #page-studio .lbl-row.sel-t{background:#141814;border-left:2px solid #7aaa7a;}
@@ -385,7 +392,7 @@ canvas#overlay{position:absolute;top:0;left:0;}
 #page-studio .rp-hint{font-size:9px;color:var(--faint);text-align:center;margin:-2px 0 8px;}
 #page-studio .rp-btns{display:flex;gap:4px;margin-top:8px;}
 #page-studio .rp-btns .btn{flex:1;font-size:10px;padding:4px 5px;}
-#page-studio #legend{position:absolute;left:0;top:0;background:rgba(8,8,6,.92);border:1px solid var(--border);border-radius:8px;padding:9px 12px;z-index:7;pointer-events:auto;cursor:grab;min-width:152px;user-select:none;}
+#page-studio #legend{position:absolute;left:0;top:0;background:rgba(8,8,6,.92);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:8px;padding:9px 12px;z-index:7;pointer-events:auto;cursor:grab;min-width:152px;user-select:none;box-shadow:0 14px 40px rgba(0,0,0,.5);}
 #page-studio #legend:active{cursor:grabbing;}
 #page-studio #legend .lg-drag{font-size:8px;color:var(--faint3);letter-spacing:.06em;margin-top:5px;text-align:center;}
 #page-studio #lg-title{font-size:9px;font-weight:700;color:var(--faint3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
@@ -406,6 +413,34 @@ canvas#overlay{position:absolute;top:0;left:0;}
 #page-studio.light-ink #legend #lg-title{color:#6a6256;}
 #page-studio.light-ink #legend .lg{color:#33302a;}
 #page-studio.light-ink #legend .lg-drag{color:#9a9385;}
+
+/* ── Track Studio → mobile ────────────────────────────────────────────────
+   Nine toolbar groups can't wrap onto one or two rows on a phone without
+   either shrinking illegibly or stacking tall enough to eat the canvas —
+   so the toolbar becomes a single horizontally-scrolling rail instead (the
+   same tool-rail idiom mobile drawing/creative apps use), and the 220px
+   label sidebar becomes an off-canvas drawer. Kept as its own block (after
+   the rules above) so these overrides win the cascade regardless of
+   source order elsewhere. */
+@media (max-width:760px){
+  #page-studio .ts-sidebar-btn{display:inline-flex;align-items:center;gap:4px;}
+  #page-studio #toolbar{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  #page-studio #toolbar::-webkit-scrollbar{display:none;}
+  #page-studio .ts-group{flex-shrink:0;}
+  #page-studio #main{position:relative;}
+  #page-studio #sidebar{
+    position:absolute;top:0;bottom:0;left:0;width:250px;max-width:78vw;
+    z-index:150;transform:translateX(-100%);
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+  }
+  #page-studio.sidebar-open #sidebar{transform:translateX(0);}
+  #page-studio .ts-scrim{display:block;position:absolute;inset:0;background:rgba(6,6,6,.45);z-index:149;opacity:0;pointer-events:none;transition:opacity .2s;}
+  #page-studio.sidebar-open .ts-scrim{opacity:1;pointer-events:auto;}
+  #page-studio .btn{padding:8px 11px;font-size:13px;}
+  #page-studio #sw,#page-studio #er-sw{width:64px;}
+  #page-studio .zoom-inp{width:54px;font-size:13px;}
+  #page-studio #render-panel{left:8px;right:8px;width:auto;max-width:340px;margin:0 auto;}
+}
 </style>
 </head>
 <body>
@@ -793,25 +828,25 @@ canvas#overlay{position:absolute;top:0;left:0;}
       <button class="btn" onclick="TS.triggerFile('f-bg')">📷 Image</button>
       <input type="file" id="f-bg" accept="image/*" style="display:none" onchange="TS.loadBg(event)">
       <button class="btn go" id="btn-from-ra" onclick="TS.loadFromRouteArt()" title="Use the current GPX poster as the Track Studio background">⬇ From RouteArt</button>
-      <button class="btn" id="btn-bg" onclick="TS.toggleBg()">👁 BG</button>
+      <button class="btn" id="btn-bg" onclick="TS.toggleBg()" title="Toggle background visibility" aria-label="Toggle background visibility">👁 BG</button>
     </div>
 
     <div class="ts-group">
       <span class="ts-glabel">Style</span>
       <div class="style-toggle">
-        <button class="btn on" id="sty-dark"  onclick="TS.setStyle('dark')"  title="Dark background">◼</button>
-        <button class="btn"    id="sty-light" onclick="TS.setStyle('light')" title="Light background">◻</button>
-        <button class="btn"    id="sty-trans" onclick="TS.setStyle('trans')" title="Transparent (export only)">⬚</button>
+        <button class="btn on" id="sty-dark"  onclick="TS.setStyle('dark')"  title="Dark background" aria-label="Dark background">◼</button>
+        <button class="btn"    id="sty-light" onclick="TS.setStyle('light')" title="Light background" aria-label="Light background">◻</button>
+        <button class="btn"    id="sty-trans" onclick="TS.setStyle('trans')" title="Transparent (export only)" aria-label="Transparent background (export only)">⬚</button>
       </div>
     </div>
 
     <div class="ts-group">
       <span class="ts-glabel">View</span>
-      <button class="btn" id="btn-pan" onclick="TS.setMode('pan')" title="Pan (or hold Space+drag)">✥</button>
-      <button class="btn" onclick="TS.zoomStep(1.25)" title="Zoom in">＋</button>
-      <button class="btn" onclick="TS.zoomStep(0.8)"  title="Zoom out">－</button>
+      <button class="btn" id="btn-pan" onclick="TS.setMode('pan')" title="Pan (or hold Space+drag)" aria-label="Pan tool">✥</button>
+      <button class="btn" onclick="TS.zoomStep(1.25)" title="Zoom in" aria-label="Zoom in">＋</button>
+      <button class="btn" onclick="TS.zoomStep(0.8)"  title="Zoom out" aria-label="Zoom out">－</button>
       <button class="btn" onclick="TS.resetView()"    title="Fit to view">⊡ Fit</button>
-      <input id="zoom-val" class="zoom-inp" value="100%" title="Type a zoom % and press Enter (or use ⊡ Fit)" onchange="TS.setZoomPct(this.value)" onkeydown="if(event.key==='Enter')event.target.blur()">
+      <input id="zoom-val" class="zoom-inp" value="100%" title="Type a zoom % and press Enter (or use ⊡ Fit)" aria-label="Zoom percentage" onchange="TS.setZoomPct(this.value)" onkeydown="if(event.key==='Enter')event.target.blur()">
     </div>
 
     <div class="ts-group">
@@ -827,25 +862,26 @@ canvas#overlay{position:absolute;top:0;left:0;}
     <div class="ts-group">
       <span class="ts-glabel">Color</span>
       <button class="btn" id="btn-hi" onclick="TS.setMode('hi')"><span id="hi-sw" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#9090d8;margin-right:3px;vertical-align:middle"></span>Recolor</button>
-      <input type="color" id="hi-color" value="#9090d8" oninput="TS.setHiColor(this.value)">
-      <input type="text" id="hi-name" class="ts-name" placeholder="legend name…" title="Name shown in the legend for the recolored section" oninput="TS.setHiName(this.value)">
+      <input type="color" id="hi-color" value="#9090d8" oninput="TS.setHiColor(this.value)" aria-label="Recolor color">
+      <input type="text" id="hi-name" class="ts-name" placeholder="legend name…" title="Name shown in the legend for the recolored section" aria-label="Legend name for the recolored section" oninput="TS.setHiName(this.value)">
     </div>
 
     <div class="ts-group">
       <span class="ts-glabel">Erase</span>
-      <button class="btn" id="btn-er" onclick="TS.setMode('erase')">⌫</button>
-      <input type="range" id="er-sw" min="2" max="60" value="10" oninput="TS.setEraseR(this.value)">
+      <button class="btn" id="btn-er" onclick="TS.setMode('erase')" title="Erase" aria-label="Erase tool">⌫</button>
+      <input type="range" id="er-sw" min="2" max="60" value="10" aria-label="Eraser radius" oninput="TS.setEraseR(this.value)">
       <span class="sw-val" id="er-val">10</span>
     </div>
 
     <div class="ts-group">
       <span class="ts-glabel">Edit</span>
       <button class="btn" onclick="TS.undo()">↩ Undo</button>
-      <button class="btn red" onclick="TS.clearTraces()" title="Clear all traces">✕</button>
+      <button class="btn red" onclick="TS.clearTraces()" title="Clear all traces" aria-label="Clear all traces">✕</button>
     </div>
 
     <div class="ts-group">
       <span class="ts-glabel">Labels</span>
+      <button class="btn ts-sidebar-btn" onclick="TS.toggleSidebar()" title="Show label list" aria-label="Show label list">☰ List</button>
       <button class="btn" id="btn-lbl"     onclick="TS.setMode('lbl')">﹢ Label</button>
       <button class="btn" id="btn-lbl-alt" onclick="TS.setMode('lbl-alt')">﹢ Alt</button>
       <button class="btn" id="btn-lbl-tbd" onclick="TS.setMode('lbl-tbd')">﹢ TBD</button>
@@ -855,16 +891,17 @@ canvas#overlay{position:absolute;top:0;left:0;}
     <div class="ts-group">
       <span class="ts-glabel">Output</span>
       <button class="btn go" onclick="TS.openRenderPanel()">✦ Render</button>
-      <button class="btn" id="btn-rv" onclick="TS.toggleRender()" style="display:none" title="Toggle render view">👁</button>
+      <button class="btn" id="btn-rv" onclick="TS.toggleRender()" style="display:none" title="Toggle render view" aria-label="Toggle render view">👁</button>
       <button class="btn" onclick="TS.exportImg()" title="Export PNG (raster)">🖼 PNG</button>
       <button class="btn" onclick="TS.exportSVG()" title="Export SVG (vector — scalable for print)">⬡ SVG</button>
-      <button class="btn" onclick="TS.saveJSON()" title="Save session">💾</button>
-      <button class="btn" onclick="TS.triggerFile('f-json')" title="Load session">📂</button>
+      <button class="btn" onclick="TS.saveJSON()" title="Save session" aria-label="Save session">💾</button>
+      <button class="btn" onclick="TS.triggerFile('f-json')" title="Load session" aria-label="Load session">📂</button>
       <input type="file" id="f-json" accept=".json" style="display:none" onchange="TS.loadJSON(event)">
     </div>
   </div>
 
   <div id="main">
+    <div class="ts-scrim" onclick="TS.toggleSidebar(false)"></div>
     <div id="sidebar">
       <div id="sb-head"><span>Labels</span><span id="lbl-count" style="color:var(--faint3);font-size:9px">0</span></div>
       <div id="lbl-list"><div id="lbl-empty">No labels yet.<br>Use ﹢ Label then<br>click on the track.</div></div>
@@ -878,9 +915,9 @@ canvas#overlay{position:absolute;top:0;left:0;}
         </select>
         <div class="ie-btns">
           <button class="btn go"  onclick="TS.saveLabel()">Save</button>
-          <button class="btn"     onclick="TS.copyLabel()" title="Duplicate">⎘</button>
+          <button class="btn"     onclick="TS.copyLabel()" title="Duplicate" aria-label="Duplicate label">⎘</button>
           <button class="btn red" onclick="TS.deleteLabel()">Del</button>
-          <button class="btn"     onclick="TS.closeEdit()">✕</button>
+          <button class="btn"     onclick="TS.closeEdit()" title="Close" aria-label="Close label editor">✕</button>
         </div>
       </div>
     </div>
@@ -4186,8 +4223,11 @@ function refreshSidebar(){
   labels.forEach(lb=>{
     const col=TC[lb.type]||TC.main;
     const row=document.createElement('div');row.className='lbl-row';row.id=`row-${lb.id}`;
+    row.tabIndex=0;row.setAttribute('role','button');row.setAttribute('aria-label','Edit label: '+lb.name);
     row.innerHTML=`<div class="lrow-dot" style="background:${col}"></div><div class="lrow-name">${esc(lb.name)}</div><div class="lrow-acts"><span class="lrow-btn" onclick="event.stopPropagation();TS.copyLabelById(${lb.id})">⎘</span><span class="lrow-btn" style="color:#7a3030" onclick="event.stopPropagation();TS.quickDelete(${lb.id})">✕</span></div>`;
-    row.addEventListener('click',()=>openEdit(lb.id));lblList.appendChild(row);
+    row.addEventListener('click',()=>openEdit(lb.id));
+    row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openEdit(lb.id);}});
+    lblList.appendChild(row);
   });
   highlightRow(selId);
 }
@@ -4492,6 +4532,18 @@ function makeLegendDraggable(){
   lg.addEventListener('touchstart',start,{passive:false});
 }
 
+// Mobile-only: the label sidebar becomes an off-canvas drawer (see the
+// #page-studio.sidebar-open rules in the 760px media query). No-op on
+// desktop, where the sidebar stays docked regardless of this class.
+function toggleSidebar(force){
+  const ps=document.getElementById('page-studio');if(!ps)return;
+  const open = typeof force==='boolean' ? force : !ps.classList.contains('sidebar-open');
+  ps.classList.toggle('sidebar-open',open);
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape' && document.getElementById('page-studio').classList.contains('sidebar-open')) toggleSidebar(false);
+});
+
 // ── Boot ──
 initCanvases();resetView();setMode('browse');makeLegendDraggable();refreshLegendDom();
 
@@ -4503,7 +4555,7 @@ window.TS={
   undo, clearTraces, openRenderPanel, toggleRender, exportImg, exportSVG,
   saveJSON, loadJSON, saveLabel, copyLabel, copyLabelById,
   deleteLabel, quickDelete, closeEdit, rpV, schedLiveRender,
-  doRender, closeRenderPanel
+  doRender, closeRenderPanel, toggleSidebar
 };
 })();
 </script>
