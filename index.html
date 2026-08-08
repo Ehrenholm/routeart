@@ -4404,7 +4404,12 @@ function exportSVG(){
 
 // ── Save / Load ──
 function saveJSON(){
-  const d={v:7,CW,CH,bgStyle,hiColor,hiName,labelScale,legendPos,labelId,segId,sfPos:sfPos?{x:+sfPos.x.toFixed(1),y:+sfPos.y.toFixed(1)}:null,
+  const gv=id=>{const el=document.getElementById(id);return el?+el.value:null;};
+  const d={v:8,CW,CH,bgStyle,hiColor,hiName,labelScale,exportRes,
+    // Render/appearance controls — so the re-rendered look survives a reload
+    // (without these, smoothing etc. snap back to defaults and lines look rougher).
+    render:{smooth:gv('rp-smooth'),tol:gv('rp-tol'),glow:gv('rp-glow'),lw:gv('rp-lw')},
+    legendPos,labelId,segId,sfPos:sfPos?{x:+sfPos.x.toFixed(1),y:+sfPos.y.toFixed(1)}:null,
     segments:segments.map(s=>({id:s.id,type:s.type,color:s.color,w:s.w,pts:s.pts.map(p=>[+(p.x.toFixed(1)),+(p.y.toFixed(1))])})),
     labels:labels.map(l=>({id:l.id,x:+l.x.toFixed(1),y:+l.y.toFixed(1),name:l.name,type:l.type,dir:l.dir||'ne'}))
   };
@@ -4416,6 +4421,14 @@ function loadJSON(e){
   r.onload=ev=>{
     try{
       const d=JSON.parse(ev.target.result);
+      // ── Reset cross-session state so nothing from the session that was open
+      //    before bleeds into the one being loaded. The background image is not
+      //    stored in the JSON, so a stale one would otherwise show through
+      //    (stretched to the new canvas) and fight the "fit to window". ──
+      bgImg=null; bgVisible=true;
+      document.getElementById('btn-bg').classList.remove('on');
+      undoStack=[]; drawing=false; curPts=[];
+      selId=null; pinDrag=null; sfDrag=false;
       // Segments are always stored in absolute pixels.
       segments=(d.segments||[]).map(s=>({id:s.id||++segId,type:s.type,color:s.color||(s.type==='alt'?'#c9b896':'#d8d4c0'),w:s.w||8,pts:(s.pts||[]).map(p=>({x:p[0],y:p[1]}))}));
       // ── Canvas size ──
@@ -4446,9 +4459,25 @@ function loadJSON(e){
       if(d.hiColor){hiColor=d.hiColor;document.getElementById('hi-color').value=hiColor;document.getElementById('hi-sw').style.background=hiColor;}
       if(d.hiName!=null){hiName=d.hiName;const hn=document.getElementById('hi-name');if(hn)hn.value=hiName;}
       legendPos=d.legendPos||null;   // null → auto-place in the emptiest corner
-      if(d.labelScale){labelScale=d.labelScale;const ls=document.getElementById('rp-lblsize');if(ls){ls.value=labelScale;rpV('rp-lblsize-v',labelScale);}}
+      // ── Restore render/appearance controls. Always set them (defaulting to the
+      //    app defaults when a field is missing) so the loaded session looks the
+      //    way it was saved and never inherits a prior session's slider values. ──
+      const setRP=(id,val,def)=>{const el=document.getElementById(id);const v=val!=null?val:def;if(el){el.value=v;const sp=document.getElementById(id+'-v');if(sp)sp.textContent=v;}};
+      const rs=d.render||{};
+      setRP('rp-smooth', rs.smooth, 3);
+      setRP('rp-tol',    rs.tol,    2.5);
+      setRP('rp-glow',   rs.glow,   0.4);
+      setRP('rp-lw',     rs.lw,     1);
+      labelScale=d.labelScale!=null?+d.labelScale:1;
+      {const ls=document.getElementById('rp-lblsize');if(ls){ls.value=labelScale;rpV('rp-lblsize-v',(+labelScale).toFixed(1));}}
+      exportRes=d.exportRes!=null?+d.exportRes:2;
+      {const re=document.getElementById('rp-res');if(re)re.value=exportRes;}
       setStyle(d.bgStyle||'dark');
       pinsEl.innerHTML='';labels.forEach(renderPin);
+      // The dropzone is an empty-state prompt — hide it whenever the loaded
+      // session actually has content so it doesn't ghost over the track.
+      document.getElementById('dropzone').style.display=(segments.length||labels.length)?'none':'';
+      setMode('browse');
       redrawBg();redrawTrace();refreshSidebar();refreshSFEl();resetView();
       renderVis=false;panelPreview=false;showRenderCanvas(false);document.getElementById('btn-rv').style.display='none';
       stEl.textContent='Session loaded — '+segments.length+' segments, '+labels.length+' labels';
